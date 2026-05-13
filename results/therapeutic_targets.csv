@@ -1,0 +1,61 @@
+gene,modality,total_contrib,max_contrib,n_factors,directions,role,pathway,tx_mechanism,actionable
+TP53,expression,0.11961429129820798,0.04580474661078815,5,"up,down",TSG/gain-of-function,DNA damage response,Gene therapy / p53 reactivation (APR-246/eprenetapopt); MDM2 inhibitors.,Yes
+TTN,expression,0.07160231126120697,0.02584040009880548,4,"up,down",Unknown,Unknown,Passenger mutator (large gene); hypermutation biomarker; not a direct target.,Partial
+RLN1,expression,0.06426346894918974,0.06426346894918974,1,up,Unknown,Unknown,Under investigation,Partial
+RLN2,expression,0.06426346894918974,0.06426346894918974,1,up,Unknown,Unknown,Under investigation,Partial
+INSL4,expression,0.06418039424962657,0.06418039424962657,1,up,Unknown,Unknown,Under investigation,Partial
+PDCD1LG2,expression,0.06412326564654254,0.06412326564654254,1,up,Unknown,Unknown,Under investigation,Partial
+CD274,expression,0.06411809569763732,0.06411809569763732,1,up,Unknown,Unknown,Under investigation,Partial
+RCL1,expression,0.06402112526910574,0.06402112526910574,1,up,Unknown,Unknown,Under investigation,Partial
+PLGRKT,expression,0.06401948242240954,0.06401948242240954,1,up,Unknown,Unknown,Under investigation,Partial
+JAK2,expression,0.06389503441496708,0.06389503441496708,1,up,Unknown,Unknown,Under investigation,Partial
+KIAA1432,expression,0.06389169759621276,0.06389169759621276,1,up,Unknown,Unknown,Under investigation,Partial
+KRT16,expression,0.06387586002317362,0.03681601993316891,2,up,Unknown,Epithelial differentiation,Under investigation,Partial
+KIAA2026,expression,0.06385868683619224,0.06385868683619224,1,up,Unknown,Unknown,Under investigation,Partial
+IL33,expression,0.06384470221102,0.06384470221102,1,up,Unknown,Unknown,Under investigation,Partial
+snoU13|ENSG00000252110.1,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+RN7SL25P,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+TPD52L3,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+RN7SL123P,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+C9orf38,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+GLDC,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+UHRF2,expression,0.06382826011547166,0.06382826011547166,1,up,Unknown,Unknown,Under investigation,Partial
+AK3,expression,0.0638174331776168,0.0638174331776168,1,up,Unknown,Unknown,Under investigation,Partial
+PPAPDC2,expression,0.0637414636263457,0.0637414636263457,1,up,Unknown,Unknown,Under investigation,Partial
+CDC37L1,expression,0.0637184428069554,0.0637184428069554,1,up,Unknown,Unknown,Under investigation,Partial
+SLC1A1,expression,0.06363280910950721,0.06363280910950721,1,up,Unknown,Unknown,Under investigation,Partial
+SPATA6L,expression,0.06356581414649976,0.06356581414649976,1,up,Unknown,Unknown,Under investigation,Partial
+KDM4C,expression,0.06343980083533449,0.06343980083533449,1,up,Unknown,Unknown,Under investigation,Partial
+PTPRH,expression,0.0633798325712491,0.04650221677516398,2,"up,down",Unknown,Unknown,Under investigation,Partial
+GLIS3,expression,0.06229503338397019,0.06229503338397019,1,up,Unknown,Unknown,Under investigation,Partial
+KRT6A,expression,0.06185930519901851,0.03643773609809641,2,up,Unknown,Epithelial differentiation,Under investigation,Partial
+GRK1,expression,0.060650341444729194,0.03142273985599854,3,up,Unknown,Unknown,Under investigation,Partial
+TMEM255B,expression,0.060650341444729194,0.03142273985599854,3,up,Unknown,Unknown,Under investigation,Partial
+GAS6,expression,0.060650341444729194,0.03142273985599854,3,up,Unknown,Unknown,Under investigation,Partial
+CDC16,expression,0.06063859685929745,0.03125811353225042,3,up,Unknown,Unknown,Under investigation,Partial
+UPF3A,expression,0.06063859685929745,0.03125811353225042,3,up,Unknown,Unknown,Under investigation,Partial
+MIR4502,expression,0.06063859685929745,0.03125811353225042,3,up,Unknown,Unknown,Under investigation,Partial
+MIR548AR,expression,0.06063859685929745,0.03125811353225042,3,up,Unknown,Unknown,Under investigation,Partial
+CHAMP1,expression,0.06063859685929745,0.03125811353225042,3,up,Unknown,Unknown,Under investigation,Partial
+LINC00454,expression,0.060626270350522815,0.03138627355918177,3,up,Unknown,Unknown,Under investigation,Partial
+RASA3,expression,0.06054981563027829,0.031256904911618234,3,up,Unknown,Unknown,Under investigation,Partial
+TFDP1,expression,0.06042734335070127,0.03142694782492159,3,up,Unknown,Unknown,Under investigation,Partial
+ATP11A,expression,0.06013102815914612,0.031503869869017466,3,up,Unknown,Unknown,Under investigation,Partial
+PRSS3,expression,0.05416208557873248,0.05416208557873248,1,up,Unknown,Unknown,Under investigation,Partial
+GPC5,expression,0.05353438601789895,0.028883594358449845,3,up,Unknown,Unknown,Under investigation,Partial
+GPC6,expression,0.05292951945291938,0.028455892737163653,3,up,Unknown,Unknown,Under investigation,Partial
+KLF12,expression,0.05131339140816444,0.030534171745387938,3,up,Unknown,Unknown,Under investigation,Partial
+RNY1P8,expression,0.05123068946665708,0.031011530097384884,3,up,Unknown,Unknown,Under investigation,Partial
+LINC00392,expression,0.051039190282909146,0.030465781968571602,3,up,Unknown,Unknown,Under investigation,Partial
+LINC00393,expression,0.05098272712801977,0.030936410748712038,3,up,Unknown,Unknown,Under investigation,Partial
+KLF5,expression,0.050912009318604595,0.030785276556757342,3,up,Unknown,Unknown,Under investigation,Partial
+PIBF1,expression,0.050738802262164685,0.030222669638043775,3,up,Unknown,Unknown,Under investigation,Partial
+FERMT1,expression,0.049420110517131056,0.049420110517131056,1,up,Unknown,Unknown,Under investigation,Partial
+VSNL1,expression,0.04858566626820553,0.04858566626820553,1,up,Unknown,Unknown,Under investigation,Partial
+LAD1,expression,0.04733880134408652,0.027743014121800417,2,up,Unknown,Unknown,Under investigation,Partial
+ATP10B,expression,0.046491522497994806,0.046491522497994806,1,up,Unknown,Unknown,Under investigation,Partial
+PI3,expression,0.04503487839751206,0.04503487839751206,1,up,Unknown,Unknown,Under investigation,Partial
+IDH1,expression,0.0443401523105125,0.015916399012241858,5,"up,down",Oncogene,TCA cycle/epigenetics,Ivosidenib; IDH1-mut tumors also sensitive to IDH-mut-PARP synthetic lethality.,Yes
+KLK6,expression,0.04410116279213315,0.04410116279213315,1,up,Unknown,Unknown,Under investigation,Partial
+HPN,expression,0.04376794593441457,0.04376794593441457,1,down,Unknown,Unknown,Under investigation,Partial
+IL1A,expression,0.042234459408206214,0.042234459408206214,1,up,Unknown,Unknown,Under investigation,Partial

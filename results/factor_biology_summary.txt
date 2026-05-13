@@ -1,0 +1,80 @@
+TCGA PAN-CANCER MULTIOMICS MARKER ANALYSIS
+Factor-level biology decoded from MOFA+ weights × SHAP scores
+Top factors: ['Factor8', 'Factor6', 'Factor1', 'Factor15', 'Factor12']
+
+======================================================================
+FACTOR Factor8  |  avg |SHAP| = 0.2831  |  var explained = 0.032
+  FTT=0.2814  XGB=0.2755  LGB=0.2925  (consistency CV=0.031)
+======================================================================
+  [Expression] top genes: PRSS3((up)), FERMT1((up)), VSNL1((up)), PTPRH((up)), ATP10B((up)), PI3((up)), KLK6((up)), HPN((down)), IL1A((up)), SPRR1B((up)), SERPINB5((up)), CYP4F3((up)), FGFBP1((up)), SPRR1A((up)), AKR1B10((up))
+  [Mutation] top genes: TP53((up)), TTN((up)), IDH1((up)), APC((up)), SYNE1((up)), MUC16((up)), KRAS((up)), ATRX((up)), KMT2D((up)), DNAH5((up)), BRAF((down)), FAT4((up)), FAT1((up)), FLG((up)), OBSCN((up))
+    -> Druggable/known: TP53, IDH1, APC, KRAS, ATRX, KMT2D, BRAF
+  [CNV] top genes: ATP11A((up)), TFDP1((up)), TMEM255B((up)), GAS6((up)), GRK1((up)), LINC00454((up)), CDC16((up)), MIR548AR((up)), MIR4502((up)), UPF3A((up)), CHAMP1((up)), RASA3((up)), RNY1P8((up)), LINC00393((up)), KLF5((up))
+======================================================================
+FACTOR Factor6  |  avg |SHAP| = 0.2194  |  var explained = 0.008
+  FTT=0.2371  XGB=0.1991  LGB=0.2220  (consistency CV=0.087)
+======================================================================
+  [Expression] top genes: PHACTR3((down)), PTPRH((down)), OMG((down)), BCAS1((down)), PNMA2((down)), PTPRN((down)), SFTA2((down)), DMBT1((down)), SOX2((down)), GAL3ST1((down)), ARSL((down)), CTSE((down)), ATP1A3((down)), SOX21((down)), CLDN18((down))
+  [Mutation] top genes: TP53((down)), TTN((down)), IDH1((down)), CSMD3((down)), RYR2((down)), KRAS((down)), FLG((down)), BRAF((up)), ZFHX4((down)), EGFR((down)), LRP1B((down)), FAT3((down)), MUC16((down)), PIK3CA((up)), ATRX((down))
+    -> Druggable/known: TP53, IDH1, KRAS, BRAF, EGFR, PIK3CA, ATRX
+  [CNV] top genes: RLN2((up)), RLN1((up)), INSL4((up)), PDCD1LG2((up)), CD274((up)), RCL1((up)), PLGRKT((up)), JAK2((up)), KIAA1432((up)), KIAA2026((up)), IL33((up)), GLDC((up)), RN7SL25P((up)), snoU13|ENSG00000252110.1((up)), UHRF2((up))
+======================================================================
+FACTOR Factor1  |  avg |SHAP| = 0.1624  |  var explained = 0.061
+  FTT=0.2455  XGB=0.1119  LGB=0.1297  (consistency CV=0.446)
+======================================================================
+  [Expression] top genes: SFN((up)), LYPD3((up)), LAD1((up)), IQANK1((up)), CSTA((up)), RHOV((up)), KRT17((up)), KRT16((up)), NECTIN4((up)), KRT15((up)), GJB2((up)), FXYD3((up)), TMEM40((up)), TP63((up)), PKP3((up))
+  [Mutation] top genes: TP53((up)), TTN((up)), CSMD3((up)), MUC16((up)), LRP1B((up)), RYR2((up)), USH2A((up)), SYNE1((up)), IDH1((down)), ZFHX4((up)), FLG((up)), KMT2D((up)), XIRP2((up)), FAM135B((up)), PKHD1L1((up))
+    -> Druggable/known: TP53, IDH1, KMT2D
+  [CNV] top genes: ABCF3((up)), PSMD2((up)), CAMK2N2((up)), ECE2((up)), B3GNT5((up)), SNORD66|ENSG00000212158.1((up)), VWA5B2((up)), MIR1224((up)), ALG3((up)), RNA5SP151((up)), DCUN1D1((up)), CHRD((up)), MCCC1((up)), FAM131A((up)), EIF4G1((up))
+======================================================================
+FACTOR Factor15  |  avg |SHAP| = 0.1197  |  var explained = 0.025
+  FTT=0.1364  XGB=0.1048  LGB=0.1181  (consistency CV=0.132)
+======================================================================
+  [Expression] top genes: SCGB2A2((down)), LRRC15((down)), CA12((down)), PRLR((down)), PIP((down)), MUC1((down)), TFF1((down)), GATA3((down)), AGR3((down)), KLK2((up)), CAPN8((down)), B3GAT1((up)), NPY((up)), MYB((down)), TMPRSS3((down))
+    -> Druggable/known: KLK2
+  [Mutation] top genes: PIK3CA((down)), KRAS((down)), IDH1((up)), OBSCN((down)), TP53((down)), KMT2C((down)), ARID1A((down)), NEB((down)), PTEN((down)), DNAH5((down)), MUC5B((down)), KMT2B((down)), BRAF((up)), ATRX((up)), SPAG17((down))
+    -> Druggable/known: PIK3CA, KRAS, IDH1, TP53, KMT2C, ARID1A, PTEN, BRAF, ATRX
+  [CNV] top genes: LINC00454((up)), MIR548AR((up)), MIR4502((up)), CDC16((up)), CHAMP1((up)), UPF3A((up)), TMEM255B((up)), GAS6((up)), GRK1((up)), RASA3((up)), TFDP1((up)), ATP11A((up)), GPC6((up)), GPC5((up)), KLF12((up))
+======================================================================
+FACTOR Factor12  |  avg |SHAP| = 0.1196  |  var explained = 0.053
+  FTT=0.1070  XGB=0.1204  LGB=0.1313  (consistency CV=0.102)
+======================================================================
+  [Expression] top genes: DUOX2((up)), DUOXA1((up)), LINC02967((up)), VSIG2((up)), SFTA3((up)), CLDN1((up)), TG((up)), TMPRSS6((up)), ESRP2((up)), TPO((up)), TMPRSS2((up)), CST6((up)), C1orf116((up)), LIPH((up)), RAB25((up))
+  [Mutation] top genes: IDH1((down)), TP53((down)), BRAF((up)), TTN((down)), ATRX((down)), PBRM1((down)), MUC16((down)), CIC((down)), PIK3CA((down)), FLG((down)), CSMD3((down)), PCLO((down)), SYNE1((down)), LRP2((down)), OBSCN((down))
+    -> Druggable/known: IDH1, TP53, BRAF, ATRX, PIK3CA
+  [CNV] top genes: GPC5((up)), MIR548AR((up)), CHAMP1((up)), CDC16((up)), UPF3A((up)), MIR4502((up)), RASA3((up)), KLF5((up)), GRK1((up)), GAS6((up)), TMEM255B((up)), LINC00454((up)), GPC6((up)), TFDP1((up)), LINC00393((up))
+
+======================================================================
+TOP 30 GENE-LEVEL THERAPEUTIC TARGETS
+======================================================================
+                    gene   modality  total_contrib  n_factors                 role                    pathway                                                                  tx_mechanism
+                    TP53 expression       0.119614          5 TSG/gain-of-function        DNA damage response      Gene therapy / p53 reactivation (APR-246/eprenetapopt); MDM2 inhibitors.
+                     TTN expression       0.071602          4              Unknown                    Unknown Passenger mutator (large gene); hypermutation biomarker; not a direct target.
+                    RLN1 expression       0.064263          1              Unknown                    Unknown                                                           Under investigation
+                    RLN2 expression       0.064263          1              Unknown                    Unknown                                                           Under investigation
+                   INSL4 expression       0.064180          1              Unknown                    Unknown                                                           Under investigation
+                PDCD1LG2 expression       0.064123          1              Unknown                    Unknown                                                           Under investigation
+                   CD274 expression       0.064118          1              Unknown                    Unknown                                                           Under investigation
+                    RCL1 expression       0.064021          1              Unknown                    Unknown                                                           Under investigation
+                  PLGRKT expression       0.064019          1              Unknown                    Unknown                                                           Under investigation
+                    JAK2 expression       0.063895          1              Unknown                    Unknown                                                           Under investigation
+                KIAA1432 expression       0.063892          1              Unknown                    Unknown                                                           Under investigation
+                   KRT16 expression       0.063876          2              Unknown Epithelial differentiation                                                           Under investigation
+                KIAA2026 expression       0.063859          1              Unknown                    Unknown                                                           Under investigation
+                    IL33 expression       0.063845          1              Unknown                    Unknown                                                           Under investigation
+snoU13|ENSG00000252110.1 expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+                RN7SL25P expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+                 TPD52L3 expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+               RN7SL123P expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+                 C9orf38 expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+                    GLDC expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+                   UHRF2 expression       0.063828          1              Unknown                    Unknown                                                           Under investigation
+                     AK3 expression       0.063817          1              Unknown                    Unknown                                                           Under investigation
+                 PPAPDC2 expression       0.063741          1              Unknown                    Unknown                                                           Under investigation
+                 CDC37L1 expression       0.063718          1              Unknown                    Unknown                                                           Under investigation
+                  SLC1A1 expression       0.063633          1              Unknown                    Unknown                                                           Under investigation
+                 SPATA6L expression       0.063566          1              Unknown                    Unknown                                                           Under investigation
+                   KDM4C expression       0.063440          1              Unknown                    Unknown                                                           Under investigation
+                   PTPRH expression       0.063380          2              Unknown                    Unknown                                                           Under investigation
+                   GLIS3 expression       0.062295          1              Unknown                    Unknown                                                           Under investigation
+                   KRT6A expression       0.061859          2              Unknown Epithelial differentiation                                                           Under investigation

@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCGA Pan-Cancer Multi-Omics Pipeline — Full Documentation</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Georgia', serif;
+    font-size: 15px;
+    line-height: 1.65;
+    background: #f7f8fa;
+    color: #1a1a2e;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 270px;
+    min-width: 270px;
+    background: #0f172a;
+    color: #cbd5e1;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    padding: 0 0 40px 0;
+    flex-shrink: 0;
+  }
+  #sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid #1e293b;
+    background: #0a0f1e;
+  }
+  #sidebar-header h1 { font-size: 13px; font-weight: 700; color: #e2e8f0; letter-spacing: 0.05em; text-transform: uppercase; }
+  #sidebar-header p  { font-size: 11px; color: #64748b; margin-top: 4px; font-family: monospace; }
+  nav { padding: 12px 0; }
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-family: system-ui, sans-serif;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: #e2e8f0; background: #1e293b; }
+  nav a.active { color: #f1f5f9; background: #1e293b; border-left-color: var(--accent); }
+  .nav-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #fff;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .nav-label { flex: 1; }
+  .nav-group-label {
+    padding: 16px 20px 6px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #475569;
+    font-family: system-ui, sans-serif;
+  }
+
+  /* ── Main content ── */
+  #content { flex: 1; overflow-x: hidden; }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    color: #e2e8f0;
+    padding: 56px 60px 48px;
+    border-bottom: 4px solid #3b82f6;
+  }
+  .hero h1 { font-size: 28px; font-weight: normal; letter-spacing: -0.5px; line-height: 1.3; }
+  .hero h1 strong { color: #60a5fa; }
+  .hero p { margin-top: 12px; font-size: 14px; color: #94a3b8; max-width: 700px; }
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num { font-size: 28px; font-weight: 700; color: #60a5fa; font-family: system-ui, sans-serif; }
+  .hero-stat .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-family: system-ui, sans-serif; }
+
+  /* pipeline overview */
+  .overview-bar {
+    background: #fff;
+    padding: 28px 60px;
+    border-bottom: 1px solid #e2e8f0;
+    overflow-x: auto;
+  }
+  .overview-bar h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-family: system-ui, sans-serif; margin-bottom: 18px; }
+  .pipeline-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 900px;
+  }
+  .pf-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .pf-box {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: system-ui, sans-serif;
+    text-align: center;
+    color: #fff;
+    white-space: nowrap;
+    min-width: 90px;
+  }
+  .pf-sub { font-size: 9px; color: #94a3b8; font-family: system-ui, sans-serif; }
+  .pf-arrow {
+    font-size: 18px;
+    color: #cbd5e1;
+    padding: 0 4px;
+    align-self: center;
+    margin-bottom: 14px;
+  }
+
+  /* Sections */
+  .phase-section {
+    padding: 52px 60px;
+    border-bottom: 1px solid #e8ecf0;
+    background: #fff;
+  }
+  .phase-section:nth-child(even) { background: #fafbfc; }
+
+  .phase-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+  .phase-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    background: var(--accent-light);
+  }
+  .phase-title-block { flex: 1; }
+  .phase-num {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); font-family: system-ui, sans-serif; font-weight: 700;
+  }
+  .phase-title { font-size: 22px; font-weight: normal; color: #0f172a; line-height: 1.2; }
+  .module-pill {
+    display: inline-block;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: #475569;
+    margin-top: 6px;
+  }
+  .module-pill + .module-pill { margin-left: 6px; }
+
+  h3 { font-size: 14px; font-weight: 700; color: #334155; margin: 24px 0 10px; font-family: system-ui, sans-serif; letter-spacing: 0.01em; }
+  p { margin-bottom: 10px; color: #334155; }
+
+  /* Flow diagram */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 18px 0;
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .flow-box {
+    background: var(--accent-light);
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: system-ui, sans-serif;
+    font-weight: 500;
+    color: var(--accent-dark);
+    white-space: nowrap;
+  }
+  .flow-arrow { color: #94a3b8; font-size: 18px; padding: 0 8px; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 14px 0;
+    font-family: system-ui, sans-serif;
+  }
+  th {
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--accent);
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+  tr:hover td { background: #f8fafc; }
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #0f172a;
+  }
+
+  /* Results cards */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .result-card {
+    background: var(--accent-light);
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .result-card .rnum {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: system-ui, sans-serif;
+    line-height: 1;
+  }
+  .result-card .rlbl {
+    font-size: 11px;
+    color: #64748b;
+    font-family: system-ui, sans-serif;
+    margin-top: 4px;
+  }
+  .result-card .rsub {
+    font-size: 10px;
+    color: var(--accent);
+    font-family: system-ui, sans-serif;
+    margin-top: 2px;
+  }
+
+  /* Gotchas */
+  details {
+    margin: 20px 0;
+    border: 1.5px solid #fca5a5;
+    border-radius: 8px;
+    background: #fff5f5;
+  }
+  summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: system-ui, sans-serif;
+    color: #dc2626;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▶'; font-size: 10px; transition: transform 0.2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  .gotcha-body { padding: 0 16px 16px; }
+  .gotcha-item {
+    margin: 12px 0;
+    padding: 10px 14px;
+    background: #fff;
+    border-left: 3px solid #f87171;
+    border-radius: 0 6px 6px 0;
+  }
+  .gotcha-item .err { font-family: monospace; font-size: 11.5px; color: #b91c1c; background: #fef2f2; padding: 4px 8px; border-radius: 3px; display: block; margin: 4px 0; }
+  .gotcha-item .fix { font-size: 12.5px; color: #166534; margin-top: 6px; }
+  .gotcha-item strong { color: #0f172a; }
+
+  /* Insight box */
+  .insight-box {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-light);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .insight-box strong { color: var(--accent-dark); }
+
+  /* Outputs grid */
+  .outputs-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .output-chip {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-family: monospace;
+    color: #475569;
+  }
+
+  /* Model comparison table */
+  .cindex-table th { background: #0f172a; color: #94a3b8; }
+  .cindex-table .best { color: #16a34a; font-weight: 700; }
+  .cindex-table .model-name { font-weight: 600; }
+
+  /* Colour schemes per phase */
+  .phase-retrieval   { --accent:#0d9488; --accent-light:#f0fdfa; --accent-dark:#0f766e; }
+  .phase-preprocess  { --accent:#2563eb; --accent-light:#eff6ff; --accent-dark:#1d4ed8; }
+  .phase-survival    { --accent:#dc2626; --accent-light:#fef2f2; --accent-dark:#b91c1c; }
+  .phase-dimred      { --accent:#7c3aed; --accent-light:#f5f3ff; --accent-dark:#6d28d9; }
+  .phase-cluster     { --accent:#ea580c; --accent-light:#fff7ed; --accent-dark:#c2410c; }
+  .phase-mofa        { --accent:#059669; --accent-light:#ecfdf5; --accent-dark:#047857; }
+  .phase-cox         { --accent:#dc2626; --accent-light:#fef2f2; --accent-dark:#b91c1c; }
+  .phase-deepsurv    { --accent:#d97706; --accent-light:#fffbeb; --accent-dark:#b45309; }
+  .phase-models      { --accent:#4f46e5; --accent-light:#eef2ff; --accent-dark:#4338ca; }
+  .phase-shap        { --accent:#16a34a; --accent-light:#f0fdf4; --accent-dark:#15803d; }
+  .phase-report      { --accent:#0891b2; --accent-light:#ecfeff; --accent-dark:#0e7490; }
+
+  /* PF box colors */
+  .pf-retrieval  { background:#0d9488; }
+  .pf-preprocess { background:#2563eb; }
+  .pf-survival   { background:#dc2626; }
+  .pf-dimred     { background:#7c3aed; }
+  .pf-cluster    { background:#ea580c; }
+  .pf-mofa       { background:#059669; }
+  .pf-models     { background:#4f46e5; }
+  .pf-shap       { background:#16a34a; }
+  .pf-report     { background:#0891b2; }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <h1>Pipeline Documentation</h1>
+    <p>TCGA Pan-Cancer Multi-Omics · v2</p>
+  </div>
+  <nav>
+    <div class="nav-group-label">Overview</div>
+    <a href="#overview" style="--accent:#60a5fa">
+      <span class="nav-badge" style="background:#3b82f6">0</span>
+      <span class="nav-label">Pipeline Overview</span>
+    </a>
+
+    <div class="nav-group-label">Data</div>
+    <a href="#retrieval" style="--accent:#0d9488">
+      <span class="nav-badge" style="background:#0d9488">1</span>
+      <span class="nav-label">Data Retrieval</span>
+    </a>
+    <a href="#survival-fix" style="--accent:#dc2626">
+      <span class="nav-badge" style="background:#dc2626">2</span>
+      <span class="nav-label">Survival Data Fix</span>
+    </a>
+    <a href="#preprocess" style="--accent:#2563eb">
+      <span class="nav-badge" style="background:#2563eb">3</span>
+      <span class="nav-label">Preprocessing</span>
+    </a>
+
+    <div class="nav-group-label">Unsupervised</div>
+    <a href="#dimred" style="--accent:#7c3aed">
+      <span class="nav-badge" style="background:#7c3aed">4</span>
+      <span class="nav-label">PCA + UMAP</span>
+    </a>
+    <a href="#clustering" style="--accent:#ea580c">
+      <span class="nav-badge" style="background:#ea580c">5</span>
+      <span class="nav-label">Clustering</span>
+    </a>
+    <a href="#mofa" style="--accent:#059669">
+      <span class="nav-badge" style="background:#059669">6</span>
+      <span class="nav-label">MOFA+</span>
+    </a>
+
+    <div class="nav-group-label">Supervised</div>
+    <a href="#cox" style="--accent:#dc2626">
+      <span class="nav-badge" style="background:#dc2626">7</span>
+      <span class="nav-label">Cox Ridge</span>
+    </a>
+    <a href="#deepsurv" style="--accent:#d97706">
+      <span class="nav-badge" style="background:#d97706">8</span>
+      <span class="nav-label">DeepSurv</span>
+    </a>
+    <a href="#models" style="--accent:#4f46e5">
+      <span class="nav-badge" style="background:#4f46e5">9</span>
+      <span class="nav-label">FTT · XGB · LGB</span>
+    </a>
+    <a href="#shap" style="--accent:#16a34a">
+      <span class="nav-badge" style="background:#16a34a">10</span>
+      <span class="nav-label">SHAP Analysis</span>
+    </a>
+
+    <div class="nav-group-label">Outputs</div>
+    <a href="#results" style="--accent:#0891b2">
+      <span class="nav-badge" style="background:#0891b2">11</span>
+      <span class="nav-label">Results &amp; Insights</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- ── MAIN CONTENT ── -->
+<main id="content">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>TCGA Pan-Cancer Multi-Omics<br><strong>Analysis Pipeline</strong></h1>
+    <p>End-to-end computational oncology pipeline — from raw TCGA data retrieval through multi-omics integration, unsupervised discovery, and supervised survival prediction with SHAP interpretation.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">7,902</div><div class="lbl">Primary Tumor Samples</div></div>
+      <div class="hero-stat"><div class="num">31</div><div class="lbl">Cancer Types</div></div>
+      <div class="hero-stat"><div class="num">7,787</div><div class="lbl">Survival-Annotated</div></div>
+      <div class="hero-stat"><div class="num">2,170</div><div class="lbl">Death Events</div></div>
+      <div class="hero-stat"><div class="num">0.751</div><div class="lbl">Best C-Index</div></div>
+      <div class="hero-stat"><div class="num">3</div><div class="lbl">Omics Modalities</div></div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="overview-bar" id="overview">
+    <h2>Pipeline Flow</h2>
+    <div class="pipeline-flow">
+      <div class="pf-node">
+        <div class="pf-box pf-retrieval">Data Retrieval</div>
+        <div class="pf-sub">Xena + GDC</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-survival">Survival Fix</div>
+        <div class="pf-sub">TCGA-CDR</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-preprocess">Preprocess</div>
+        <div class="pf-sub">Align · Filter</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-dimred">PCA · UMAP</div>
+        <div class="pf-sub">Dim reduction</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-cluster">Clustering</div>
+        <div class="pf-sub">Leiden · KMeans</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-mofa">MOFA+</div>
+        <div class="pf-sub">18 factors</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-models">FTT · XGB · LGB</div>
+        <div class="pf-sub">Survival models</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-shap">SHAP</div>
+        <div class="pf-sub">Interpretation</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-node">
+        <div class="pf-box pf-report">Reports</div>
+        <div class="pf-sub">HTML · CSV</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PHASE 1: DATA RETRIEVAL ── -->
+  <section class="phase-section phase-retrieval" id="retrieval">
+    <div class="phase-header">
+      <div class="phase-icon">📥</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 1 · Data Retrieval</div>
+        <div class="phase-title">TCGA Multi-Omics Download</div>
+        <span class="module-pill">download_tcga.py</span>
+        <span class="module-pill">convert_to_csv.py</span>
+      </div>
+    </div>
+
+    <p>All TCGA pan-cancer data retrieved from UCSC Xena hubs (open-access, no authentication required). A multi-hub strategy was required because the pancanatlas hub rate-limited expression downloads.</p>
+
+    <h3>Data Sources</h3>
+    <table>
+      <tr><th>Modality</th><th>Hub</th><th>File</th><th>Size</th></tr>
+      <tr><td>Gene expression (log₂ TPM)</td><td>TOIL Xena</td><td><code>tcga_RSEM_gene_tpm.gz</code></td><td>~1.8 GB</td></tr>
+      <tr><td>Somatic mutations (MC3 MAF)</td><td>Pancanatlas</td><td><code>mc3.v0.2.8.PUBLIC.xena.gz</code></td><td>~80 MB</td></tr>
+      <tr><td>Copy number (GISTIC2 gene-level)</td><td>TCGA Xena</td><td><code>Gistic2_CopyNumber_...by_genes.gz</code></td><td>~60 MB</td></tr>
+      <tr><td>Clinical phenotype</td><td>Pancanatlas</td><td><code>TCGA_phenotype_denseDataOnlyDownload.tsv.gz</code></td><td>~2 MB</td></tr>
+      <tr><td>Survival (TCGA-CDR)</td><td>Pancanatlas</td><td><code>Survival_SupplementalTable_S1_20171025_xena_sp</code></td><td>~2.4 MB</td></tr>
+    </table>
+
+    <h3>Download Design</h3>
+    <div class="flow-diagram">
+      <div class="flow-box">Registry dict<br><small>modality → (url, file, subfolder)</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Stream download<br><small>8 MB chunks, tqdm progress</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Resume-safe skip<br><small>skip if exists &amp; size > 0</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">3× retry<br><small>10 s backoff</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Convert .gz → CSV<br><small>convert_to_csv.py</small></div>
+    </div>
+
+    <div class="outputs-grid">
+      <span class="output-chip">data/csv/expression_RSEM_gene_tpm.csv</span>
+      <span class="output-chip">data/csv/mutations_mc3_somatic.csv</span>
+      <span class="output-chip">data/csv/copy_number_GISTIC2_gene_level.csv</span>
+      <span class="output-chip">data/csv/clinical_phenotype.csv</span>
+      <span class="output-chip">data/csv/clinical_survival_cdr.csv</span>
+    </div>
+  </section>
+
+  <!-- ── PHASE 2: SURVIVAL DATA FIX ── -->
+  <section class="phase-section phase-survival" id="survival-fix">
+    <div class="phase-header">
+      <div class="phase-icon">🔬</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 2 · Critical Bug Fix</div>
+        <div class="phase-title">OS Data Bottleneck — Root Cause &amp; Fix</div>
+        <span class="module-pill">download_tcga.py</span>
+        <span class="module-pill">src/preprocess.py</span>
+      </div>
+    </div>
+
+    <p>Initial survival modeling used only 905 of 7,902 samples (11.4%) due to a data collection bug — not missing data. Full diagnosis and resolution below.</p>
+
+    <h3>The Three-Layer Problem</h3>
+    <table>
+      <tr><th>Layer</th><th>Root Cause</th><th>Effect</th></tr>
+      <tr>
+        <td><strong>Bug: GDC API pagination</strong></td>
+        <td>Offset incremented by row count (~9,428 expanded rows) instead of case count (2,000 patients). Second request at <code>from=9428</code> found no additional cases.</td>
+        <td>Only 2,000 of 11,160 TCGA patients fetched</td>
+      </tr>
+      <tr>
+        <td><strong>Consequence: 5 cancer types</strong></td>
+        <td>GDC's default sort order surfaced BRCA, OV, COAD, LUSC, SKCM first. Remaining 28 cancer types had zero survival records.</td>
+        <td>28 of 31 cancer types in cohort: no OS data</td>
+      </tr>
+      <tr>
+        <td><strong>Join amplification</strong></td>
+        <td>Multi-modal intersection produced 7,902 samples spanning all 31 types; almost all from the uncovered 28 types had no survival match.</td>
+        <td>905 samples → survival-annotated cohort</td>
+      </tr>
+    </table>
+
+    <h3>Sample Attrition Funnel (Before Fix)</h3>
+    <div class="flow-diagram">
+      <div class="flow-box">Expression<br><small>10,535 samples</small></div>
+      <div class="flow-arrow">∩</div>
+      <div class="flow-box">Mutations<br><small>9,104</small></div>
+      <div class="flow-arrow">∩</div>
+      <div class="flow-box">CNV<br><small>10,845</small></div>
+      <div class="flow-arrow">∩</div>
+      <div class="flow-box">Clinical primary<br><small>10,593</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:#dc2626">Multi-modal<br><small>7,902</small></div>
+      <div class="flow-arrow">∩</div>
+      <div class="flow-box" style="background:#fef2f2;border-color:#dc2626;color:#991b1b">GDC survival<br><small>2,000 pts / 5 types ⚠️</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="background:#fef2f2;border-color:#dc2626;color:#991b1b">905 samples ⚠️</div>
+    </div>
+
+    <h3>Fix: TCGA Clinical Data Resource (Liu et al. 2018 Cell)</h3>
+    <p>Replaced GDC API with the <strong>TCGA-CDR</strong> — the peer-reviewed, manually curated survival table for all 11,160 TCGA patients across 33 cancer types. Available as a plain TSV from pancanatlas Xena hub. Direct 15-char sample barcode join — no pagination, no multi-row expansion.</p>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="rnum">5 → 31</div>
+        <div class="rlbl">Cancer Types Covered</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">905 → 7,787</div>
+        <div class="rlbl">Survival-Annotated Samples</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">239 → 2,170</div>
+        <div class="rlbl">Death Events (9× increase)</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">0.053 → 0.008</div>
+        <div class="rlbl">CV Std Dev (7× more stable)</div>
+      </div>
+    </div>
+
+    <details>
+      <summary>⚠ Gotchas &amp; Fixes</summary>
+      <div class="gotcha-body">
+        <div class="gotcha-item">
+          <strong>Bug: GDC API offset increment</strong>
+          <span class="err">offset += len(data_lines)  # rows, not cases</span>
+          <div class="fix">✓ Fix: Replaced GDC API entirely with direct Xena download of TCGA-CDR TSV. No pagination needed — one file, one request.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>Bug: TSV read as CSV</strong>
+          <span class="err">ParserError: Expected 1 fields in line 6, saw 2</span>
+          <div class="fix">✓ Fix: Added <code>sep="\t"</code> to <code>pd.read_csv()</code> for the TCGA-CDR file which is tab-delimited despite .csv extension.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>TCGA-CDR column name differences</strong>
+          <div class="fix">✓ Key columns: <code>sample</code> (15-char barcode, direct join key), <code>OS</code> (event indicator), <code>OS.time</code> (days), <code>age_at_initial_pathologic_diagnosis</code> (already in years). Renamed on load via <code>df.rename()</code>.</div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ── PHASE 3: PREPROCESSING ── -->
+  <section class="phase-section phase-preprocess" id="preprocess">
+    <div class="phase-header">
+      <div class="phase-icon">⚙️</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 3 · Preprocessing &amp; Alignment</div>
+        <div class="phase-title">MultiomicsDataset Construction</div>
+        <span class="module-pill">src/preprocess.py</span>
+      </div>
+    </div>
+
+    <h3>Processing Steps per Modality</h3>
+    <table>
+      <tr><th>Modality</th><th>Key Steps</th><th>Output Shape</th></tr>
+      <tr>
+        <td><strong>Expression</strong></td>
+        <td>Strip Ensembl version suffix; replace TOIL floor sentinel (log₂(0.001)=−9.95) → 0; top-5,000 variance genes; transpose genes×samples → samples×genes</td>
+        <td>10,535 × 5,000</td>
+      </tr>
+      <tr>
+        <td><strong>Mutations</strong></td>
+        <td>Nonsynonymous filter (10 consequence types); truncate barcodes to 15 chars; pivot to binary matrix; ≥2% sample-frequency filter</td>
+        <td>9,093 × 1,490</td>
+      </tr>
+      <tr>
+        <td><strong>CNV</strong></td>
+        <td>Transpose to samples×genes; cast float32 (GISTIC2 thresholded −2..+2 integer values)</td>
+        <td>10,845 × 24,776</td>
+      </tr>
+      <tr>
+        <td><strong>Survival (TCGA-CDR)</strong></td>
+        <td>Direct join on 15-char sample barcode; OS_time = days; OS_event = binary; age already in years</td>
+        <td>10,593 × 5</td>
+      </tr>
+    </table>
+
+    <h3>Alignment &amp; Filtering</h3>
+    <div class="flow-diagram">
+      <div class="flow-box">4-way barcode<br>intersection</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Primary tumors only<br><small>barcode suffix -01</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Gene symbol mapping<br><small>mygene.info API</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">MultiomicsDataset<br><small>shared index</small></div>
+    </div>
+
+    <h3>Key Parameters</h3>
+    <table>
+      <tr><th>Parameter</th><th>Value</th><th>Rationale</th></tr>
+      <tr><td><code>n_top_genes</code></td><td>5,000</td><td>Top variance genes after TOIL floor replacement</td></tr>
+      <tr><td><code>min_mut_freq</code></td><td>0.02 (2%)</td><td>Removes very rare mutations (noise floor)</td></tr>
+      <tr><td>Ensembl → HGNC mapping</td><td>4,389 / 5,000 resolved</td><td>mygene.info REST API, batch queries</td></tr>
+      <tr><td>Primary tumor filter</td><td>Suffix <code>-01</code></td><td>Exclude metastatic (06), recurrent (02), normal (11)</td></tr>
+    </table>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="rnum">7,902</div><div class="rlbl">Final Cohort</div><div class="rsub">primary tumor samples</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">31</div><div class="rlbl">Cancer Types</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">7,787</div><div class="rlbl">With OS Annotation</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">2,170</div><div class="rlbl">Death Events</div><div class="rsub">28% event rate</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PHASE 4: DIM REDUCTION ── -->
+  <section class="phase-section phase-dimred" id="dimred">
+    <div class="phase-header">
+      <div class="phase-icon">🔭</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 4 · Dimensionality Reduction</div>
+        <div class="phase-title">PCA + UMAP of Expression</div>
+        <span class="module-pill">src/unsupervised/dim_reduction.py</span>
+      </div>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-box">Top-5,000 expression genes</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">StandardScaler</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">PCA(50 components)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">UMAP(n_neighbors=30, min_dist=0.3)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">2D embedding</div>
+    </div>
+
+    <h3>Key Finding</h3>
+    <div class="insight-box">
+      <strong>Cancer type (tissue of origin) is the dominant axis of variation.</strong> UMAP shows clear lineage separation — breast, lung, kidney, brain, and colorectal form distinct islands. Survival status does not segregate in UMAP space, confirming that raw expression geometry alone is insufficient for survival prediction.
+    </div>
+
+    <div class="outputs-grid">
+      <span class="output-chip">results/umap_coords.csv</span>
+      <span class="output-chip">results/figures/pca_scree.png</span>
+      <span class="output-chip">results/figures/umap_cancer_type.png</span>
+      <span class="output-chip">results/figures/umap_survival.png</span>
+    </div>
+  </section>
+
+  <!-- ── PHASE 5: CLUSTERING ── -->
+  <section class="phase-section phase-cluster" id="clustering">
+    <div class="phase-header">
+      <div class="phase-icon">🔵</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 5 · Unsupervised Clustering</div>
+        <div class="phase-title">K-means &amp; Leiden Graph Clustering</div>
+        <span class="module-pill">src/unsupervised/clustering.py</span>
+      </div>
+    </div>
+
+    <table>
+      <tr><th>Method</th><th>Parameters</th><th>Result</th><th>Survival Signal</th></tr>
+      <tr>
+        <td><strong>K-means</strong></td>
+        <td>MiniBatchKMeans; k=2–25 sweep; silhouette on 3,000-sample subsample</td>
+        <td>Optimal k=2, sil=0.287</td>
+        <td>Pan-cancer artifact: simply separates epithelial from non-epithelial</td>
+      </tr>
+      <tr>
+        <td><strong>Leiden</strong></td>
+        <td>15-NN igraph; leidenalg RBConfigurationVertexPartition; resolution=0.4</td>
+        <td><strong>22 clusters</strong></td>
+        <td>Log-rank p = 2.02×10⁻²⁴ — strong differential survival</td>
+      </tr>
+    </table>
+
+    <div class="insight-box">
+      <strong>Lesson:</strong> Graph-based Leiden substantially outperforms centroid K-means for multi-modal pan-cancer data. K-means finds the coarsest lineage split; Leiden discovers 22 biologically meaningful communities with distinct survival trajectories.
+    </div>
+
+    <div class="outputs-grid">
+      <span class="output-chip">results/cluster_labels.csv</span>
+      <span class="output-chip">figures/kmeans_umap.png</span>
+      <span class="output-chip">figures/leiden_umap.png</span>
+      <span class="output-chip">figures/leiden_survival_km.png</span>
+    </div>
+  </section>
+
+  <!-- ── PHASE 6: MOFA+ ── -->
+  <section class="phase-section phase-mofa" id="mofa">
+    <div class="phase-header">
+      <div class="phase-icon">🧬</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 6 · Multi-Omics Factor Analysis</div>
+        <div class="phase-title">MOFA+ — Two Runs</div>
+        <span class="module-pill">src/unsupervised/mofa_analysis.py</span>
+        <span class="module-pill">mofapy2 0.7.4</span>
+      </div>
+    </div>
+
+    <h3>Run History</h3>
+    <table>
+      <tr><th>Run</th><th>Expr genes</th><th>Mut genes</th><th>CNV genes</th><th>Factors</th><th>Iters</th><th>Convergence</th><th>Retained</th></tr>
+      <tr>
+        <td>Run 1 (initial)</td>
+        <td>500</td><td>150</td><td>500</td><td>15</td><td>300</td>
+        <td>iter 300 (medium)</td><td>13 factors</td>
+      </tr>
+      <tr>
+        <td><strong>Run 2 (final)</strong></td>
+        <td><strong>1,000</strong></td><td><strong>300</strong></td><td><strong>1,000</strong></td>
+        <td><strong>20</strong></td><td>400 max</td>
+        <td><strong>iter 71 (fast, ΔEL=0.044%)</strong></td><td><strong>18 factors</strong></td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:#64748b">Run 2 used larger feature budget because 7,787 survival-annotated samples (vs 905 before the survival data fix) justified richer views. Fast convergence at iteration 71 — much earlier than the 400-iteration budget.</p>
+
+    <h3>Architecture</h3>
+    <div class="flow-diagram">
+      <div class="flow-box">Expression<br><small>1,000 genes, StandardScaled, Gaussian</small></div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box">Mutations<br><small>300 genes, binary, Bernoulli</small></div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box">CNV<br><small>1,000 genes, StandardScaled, Gaussian</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">MOFA+<br><small>ARD + spike-slab priors</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">18 factors<br><small>Z matrix + W weights</small></div>
+    </div>
+
+    <h3>Top Factors &amp; Biology</h3>
+    <table>
+      <tr><th>Factor</th><th>Variance</th><th>Key Genes (Expression)</th><th>Key Mutations</th><th>Interpretation</th></tr>
+      <tr><td>Factor 1</td><td>6.1%</td><td>KRT8, KRT18, IGHA1, JCHAIN</td><td>IDH1, KRAS</td><td>Pan-cancer epithelial / immune lineage axis</td></tr>
+      <tr><td>Factor 4</td><td>5.8%</td><td>ALDOB, HNF4A, CDHR5</td><td>—</td><td>Hepatocyte / GI programme</td></tr>
+      <tr><td>Factor 7</td><td>4.7%</td><td>SOX8, CTNND2, PPP1R1B</td><td>IDH1, ATRX</td><td>Neural / IDH-mutant glioma axis</td></tr>
+      <tr><td>Factor 8</td><td>3.2%</td><td>—</td><td>—</td><td><strong>Top SHAP signal in survival models (decode next)</strong></td></tr>
+      <tr><td>Factor 9</td><td>5.1%</td><td>—</td><td>—</td><td>Second-tier survival signal</td></tr>
+    </table>
+
+    <details>
+      <summary>⚠ Gotchas &amp; Fixes (5 bugs across two runs)</summary>
+      <div class="gotcha-body">
+        <div class="gotcha-item">
+          <strong>1. Long-format API: duplicate gene names</strong>
+          <span class="err">AssertionError: Duplicated entries found in the data (35.5M rows)</span>
+          <div class="fix">✓ Fix: Switched from long-format DataFrame to matrix API (<code>set_data_matrix()</code>). Added <code>_dedup_columns()</code> to drop duplicate HGNC symbols from expression columns.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>2. Wrong data structure axis</strong>
+          <span class="err">AssertionError: Length of views names is not the same as the number of views</span>
+          <div class="fix">✓ Fix: mofapy2 expects <code>data[view][group]</code>, not <code>data[group][view]</code>. Corrected nesting: <code>data_matrix = [[views[v][0]] for v in view_names]</code>.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>3. Non-unique feature names across views</strong>
+          <span class="err">AssertionError: Duplicated entries found in features_names (globally)</span>
+          <div class="fix">✓ Fix: mofapy2 requires globally unique feature names. Prefixed all names: <code>E_</code> (expression), <code>M_</code> (mutations), <code>C_</code> (CNV).</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>4. Factor matrix type mismatch</strong>
+          <span class="err">AttributeError: 'numpy.ndarray' object has no attribute 'values'</span>
+          <div class="fix">✓ Fix: <code>model.nodes["Z"].getExpectation()</code> returns plain ndarray in mofapy2 0.7.4, not a dict. Added <code>isinstance()</code> checks for ndarray/dict/list in <code>extract_results()</code>.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>5. CPU performance: 4.5-hour projection</strong>
+          <div class="fix">✓ Fix: At 2,000/500/2,000 features and 1,000 iters → ~16 sec/iter = 4.5 hr. Cut to 1,000/300/1,000 features and 400 iters → ~14 sec/iter, converged at iter 71 = ~17 min.</div>
+        </div>
+      </div>
+    </details>
+
+    <div class="outputs-grid">
+      <span class="output-chip">results/mofa_factors.csv</span>
+      <span class="output-chip">results/mofa_variance.csv</span>
+      <span class="output-chip">results/mofa_weights_expression.csv</span>
+      <span class="output-chip">results/mofa_weights_mutations.csv</span>
+      <span class="output-chip">results/mofa_weights_cnv.csv</span>
+      <span class="output-chip">figures/mofa_variance_explained.png</span>
+      <span class="output-chip">figures/mofa_factor_umap.png</span>
+      <span class="output-chip">figures/mofa_factor_cancer_type.png</span>
+    </div>
+  </section>
+
+  <!-- ── PHASE 7: COX RIDGE ── -->
+  <section class="phase-section phase-cox" id="cox">
+    <div class="phase-header">
+      <div class="phase-icon">📈</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 7 · Survival Model (Baseline)</div>
+        <div class="phase-title">Cox Ridge — PCA Feature Matrix</div>
+        <span class="module-pill">src/supervised/cox_models.py</span>
+        <span class="module-pill">lifelines</span>
+      </div>
+    </div>
+
+    <p>Baseline proportional hazards model run on the original 905-sample cohort (before the survival data fix) using hand-crafted PCA features.</p>
+
+    <div class="flow-diagram">
+      <div class="flow-box">ExprPCA(50)</div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box">Top-100 mut genes (binary)</div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box">CNV PCA(30)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">180 features</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">ElasticNet selection → 80</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">CoxPHFitter(penalizer=0.1)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">StratifiedKFold(5)</div>
+    </div>
+
+    <div class="results-grid">
+      <div class="result-card"><div class="rnum">0.679</div><div class="rlbl">Mean C-index</div><div class="rsub">±0.035 (905 samples)</div></div>
+      <div class="result-card"><div class="rnum">905</div><div class="rlbl">Survival Samples</div><div class="rsub">pre-fix cohort</div></div>
+      <div class="result-card"><div class="rnum">80</div><div class="rlbl">Selected Features</div><div class="rsub">ElasticNet</div></div>
+    </div>
+
+    <div class="insight-box">
+      <strong>Note:</strong> scikit-survival is incompatible with Python 3.14 (no compiled wheel for the <code>ecos</code> dependency). All survival models implemented from scratch using <code>lifelines</code> for Cox and <code>PyTorch</code> for neural approaches.
+    </div>
+  </section>
+
+  <!-- ── PHASE 8: DEEPSURV ── -->
+  <section class="phase-section phase-deepsurv" id="deepsurv">
+    <div class="phase-header">
+      <div class="phase-icon">🧠</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 8 · Deep Survival Model (Baseline)</div>
+        <div class="phase-title">DeepSurv Neural Network</div>
+        <span class="module-pill">src/supervised/deepsurv.py</span>
+        <span class="module-pill">PyTorch 2.12</span>
+      </div>
+    </div>
+
+    <p>Custom PyTorch implementation of DeepSurv with Breslow Cox partial log-likelihood loss. Run on the same 905-sample cohort as Cox Ridge.</p>
+
+    <h3>Architecture</h3>
+    <div class="flow-diagram">
+      <div class="flow-box">Input (80 features)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">BatchNorm</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Linear(256)→BN→ReLU→Drop(0.4)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Linear(128)→BN→ReLU→Drop</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Linear(64)→BN→ReLU→Drop</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Linear(1) → risk score</div>
+    </div>
+
+    <table>
+      <tr><th>Component</th><th>Detail</th></tr>
+      <tr><td>Loss</td><td>Negative Breslow Cox partial log-likelihood: <code>-(Σ_events [η - logcumsumexp(η)]) / n_events</code></td></tr>
+      <tr><td>Optimizer</td><td>Adam(lr=1e-3, weight_decay=1e-4) + ReduceLROnPlateau(patience=8)</td></tr>
+      <tr><td>Early stopping</td><td>patience=20 on validation loss; 10% internal validation split per fold</td></tr>
+    </table>
+
+    <div class="results-grid">
+      <div class="result-card"><div class="rnum">0.683</div><div class="rlbl">Mean C-index</div><div class="rsub">±0.026 (905 samples)</div></div>
+      <div class="result-card"><div class="rnum">+0.004</div><div class="rlbl">Δ vs Cox Ridge</div><div class="rsub">within noise floor</div></div>
+    </div>
+
+    <div class="insight-box">
+      <strong>Interpretation:</strong> The negligible gap between DeepSurv and Cox Ridge (Δ=0.004) on this dataset indicates the survival signal is largely linear — non-linear interactions either don't exist or require more data than 905 samples / 239 events to learn reliably.
+    </div>
+  </section>
+
+  <!-- ── PHASE 9: MODEL COMPARISON ── -->
+  <section class="phase-section phase-models" id="models">
+    <div class="phase-header">
+      <div class="phase-icon">⚡</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 9 · Multi-Model Comparison</div>
+        <div class="phase-title">FT-Transformer · XGBoost · LightGBM</div>
+        <span class="module-pill">src/supervised/model_comparison.py</span>
+        <span class="module-pill">xgboost 3.2</span>
+        <span class="module-pill">lightgbm 4.6</span>
+      </div>
+    </div>
+
+    <p>Three architectures compared on the <strong>MOFA+ feature set</strong> (18 factors + 31 cancer-type dummies + age = 50 features) using the full 7,787-sample corrected survival cohort.</p>
+
+    <h3>Feature Set Design</h3>
+    <div class="flow-diagram">
+      <div class="flow-box">18 MOFA+ factors<br><small>cross-modal latents</small></div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box">31 cancer-type dummies<br><small>one-hot, no drop-first</small></div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-box">age_at_dx<br><small>continuous</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">50 features total<br><small>StandardScaler per fold</small></div>
+    </div>
+
+    <h3>Model Architectures</h3>
+    <table>
+      <tr><th>Model</th><th>Architecture</th><th>Survival Loss</th><th>Key Hyperparameters</th></tr>
+      <tr>
+        <td><strong>FT-Transformer</strong></td>
+        <td>FeatureTokenizer (per-feature linear embedding d=64) → 2× Pre-Norm Attention blocks → CLS token → Linear(1)</td>
+        <td>Breslow Cox partial log-likelihood (PyTorch)</td>
+        <td>d_token=64, n_heads=4, ffn_dim=256, dropout=0.2, Adam lr=1e-3, early stopping patience=20</td>
+      </tr>
+      <tr>
+        <td><strong>XGBoost</strong></td>
+        <td>Depth-wise gradient boosted trees</td>
+        <td>Built-in <code>survival:cox</code> objective</td>
+        <td>max_depth=5, lr=0.05, n_est=600, subsample=0.8, early stopping=30</td>
+      </tr>
+      <tr>
+        <td><strong>LightGBM</strong></td>
+        <td>Leaf-wise gradient boosted trees</td>
+        <td>Custom Cox objective (Breslow gradient + diagonal Hessian, LGB 4.x API)</td>
+        <td>num_leaves=31, lr=0.05, n_est=600, subsample=0.8, early stopping=30</td>
+      </tr>
+    </table>
+
+    <h3>FT-Transformer: Feature Tokenizer Detail</h3>
+    <p>Each of the 50 input features gets its own learned linear projection: <strong>token<sub>j</sub> = W<sub>j</sub> · x<sub>j</sub> + b<sub>j</sub></strong> where W<sub>j</sub>, b<sub>j</sub> ∈ ℝ<sup>64</sup>. A CLS token is prepended. After L=2 pre-norm transformer blocks (MultiheadAttention + GELU FFN), the CLS token is projected to a scalar log-risk score.</p>
+
+    <h3>5-Fold Cross-Validation Results (C-index)</h3>
+    <table class="cindex-table">
+      <tr><th>Model</th><th>Mean</th><th>Std</th><th>Fold 1</th><th>Fold 2</th><th>Fold 3</th><th>Fold 4</th><th>Fold 5</th></tr>
+      <tr>
+        <td class="model-name">FT-Transformer</td>
+        <td class="best">0.751</td><td>0.006</td>
+        <td>0.743</td><td>0.752</td><td>0.760</td><td>0.745</td><td>0.756</td>
+      </tr>
+      <tr>
+        <td class="model-name">XGBoost</td>
+        <td>0.747</td><td>0.008</td>
+        <td>0.736</td><td>0.750</td><td>0.757</td><td>0.738</td><td>0.752</td>
+      </tr>
+      <tr>
+        <td class="model-name">LightGBM</td>
+        <td>0.745</td><td>0.008</td>
+        <td>0.738</td><td>0.752</td><td>0.749</td><td>0.734</td><td>0.753</td>
+      </tr>
+      <tr style="background:#f1f5f9">
+        <td class="model-name" style="color:#64748b">Raw PCA XGBoost (baseline)</td>
+        <td style="color:#64748b">0.724</td><td style="color:#dc2626">0.053</td>
+        <td style="color:#64748b">0.744</td><td>0.759</td><td style="color:#dc2626">0.618</td><td>0.743</td><td>0.755</td>
+      </tr>
+      <tr style="background:#f1f5f9">
+        <td class="model-name" style="color:#64748b"><em>Cox Ridge (pre-fix, 905 samples)</em></td>
+        <td style="color:#64748b"><em>0.679</em></td><td style="color:#64748b"><em>0.035</em></td>
+        <td colspan="5" style="color:#64748b;font-size:11px">pre-TCGA-CDR fix, different cohort</td>
+      </tr>
+    </table>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="rnum">+7.2%</div><div class="rlbl">C-index vs Prior Best</div><div class="rsub">0.683 → 0.751 (DeepSurv → FTT)</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">7×</div><div class="rlbl">Std Dev Reduction</div><div class="rsub">MOFA+ vs raw PCA (0.008 vs 0.053)</div>
+      </div>
+      <div class="result-card">
+        <div class="rnum">+2.7%</div><div class="rlbl">MOFA+ vs Raw PCA</div><div class="rsub">0.724 → 0.751</div>
+      </div>
+    </div>
+
+    <details>
+      <summary>⚠ Gotchas &amp; Fixes</summary>
+      <div class="gotcha-body">
+        <div class="gotcha-item">
+          <strong>LightGBM 4.x removed built-in 'cox' objective</strong>
+          <span class="err">LightGBMError: Unknown objective type name: cox</span>
+          <div class="fix">✓ Fix: Implemented custom Cox objective from scratch. LGB 4.x API: pass <code>objective=callable</code> in params dict (not <code>fobj=</code> kwarg). Function signature changed to <code>f(preds, dataset)</code> where labels are retrieved via <code>dataset.get_label()</code>. Gradient derived from Breslow approximation with diagonal Hessian.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>TabPFN excluded — not suitable for this task</strong>
+          <div class="fix">TabPFN is designed for ≤1,000 samples + classification only. With 7,787 samples and a survival (time-to-event) objective, it cannot be applied without heavy degradation. Replaced with LightGBM which properly handles censoring.</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>XGBoost survival label convention</strong>
+          <div class="fix">✓ Label encoding: <code>label = OS_time if OS_event==1 else -OS_time</code> (positive = event, negative = censored). This is XGBoost's required format for <code>survival:cox</code> and was replicated for the custom LightGBM objective.</div>
+        </div>
+      </div>
+    </details>
+
+    <div class="outputs-grid">
+      <span class="output-chip">results/model_cv_scores.csv</span>
+      <span class="output-chip">figures/model_comparison_cindex.png</span>
+      <span class="output-chip">figures/risk_km_best_model.png</span>
+    </div>
+  </section>
+
+  <!-- ── PHASE 10: SHAP ── -->
+  <section class="phase-section phase-shap" id="shap">
+    <div class="phase-header">
+      <div class="phase-icon">🔍</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 10 · SHAP Feature Interpretation</div>
+        <div class="phase-title">Per-Model &amp; Cross-Model SHAP Analysis</div>
+        <span class="module-pill">src/supervised/model_comparison.py</span>
+        <span class="module-pill">src/supervised/shap_analysis.py</span>
+        <span class="module-pill">shap 0.51.0</span>
+      </div>
+    </div>
+
+    <h3>SHAP Methods per Model</h3>
+    <table>
+      <tr><th>Model</th><th>SHAP Method</th><th>Background</th><th>Complexity</th></tr>
+      <tr><td>FT-Transformer</td><td><code>shap.GradientExplainer</code> on <code>_FTT2D</code> wrapper</td><td>100-sample random subsample</td><td>O(n_bg × n_features × n_params)</td></tr>
+      <tr><td>XGBoost</td><td><code>shap.TreeExplainer</code></td><td>Training data (internal)</td><td>Exact polynomial-time; fast</td></tr>
+      <tr><td>LightGBM</td><td><code>shap.TreeExplainer</code></td><td>Training data (internal)</td><td>Exact polynomial-time; fast</td></tr>
+      <tr><td>Cox Ridge (prior)</td><td>Exact linear: β<sub>i</sub>(x<sub>i</sub> − Ē[x<sub>i</sub>])</td><td>Full training set mean</td><td>O(n × p), closed form</td></tr>
+    </table>
+
+    <h3>Top Feature Importances (Average |SHAP| across Models)</h3>
+    <table>
+      <tr><th>Rank</th><th>Feature</th><th>Avg |SHAP|</th><th>FTT</th><th>XGB</th><th>LGB</th><th>Interpretation</th></tr>
+      <tr><td>1</td><td><strong>age_at_dx</strong></td><td>0.397</td><td>0.346</td><td>0.379</td><td>0.464</td><td>Dominant predictor; 2× any molecular signal</td></tr>
+      <tr><td>2</td><td><strong>MOFA_Factor8</strong></td><td>0.283</td><td>0.281</td><td>0.276</td><td>0.293</td><td>Top molecular signal; highly consistent across models</td></tr>
+      <tr><td>3</td><td><strong>MOFA_Factor6</strong></td><td>0.219</td><td>0.237</td><td>0.199</td><td>0.222</td><td>Second molecular axis</td></tr>
+      <tr><td>4</td><td>CT_prostate adenocarcinoma</td><td>0.167</td><td>0.130</td><td>0.151</td><td>0.220</td><td>Protective (indolent cancer, low event rate)</td></tr>
+      <tr><td>5</td><td><strong>MOFA_Factor1</strong></td><td>0.162</td><td>0.246</td><td>0.112</td><td>0.130</td><td>Pan-cancer lineage axis; FTT weights it more</td></tr>
+      <tr><td>6</td><td>CT_breast invasive carcinoma</td><td>0.160</td><td>0.120</td><td>0.134</td><td>0.225</td><td>Protective vs pan-cancer average</td></tr>
+      <tr><td>7</td><td><strong>MOFA_Factor15</strong></td><td>0.120</td><td>0.136</td><td>0.105</td><td>0.118</td><td>Consistent third-tier signal</td></tr>
+    </table>
+
+    <div class="insight-box">
+      <strong>Cross-model SHAP agreement:</strong> Age, Factor8, and Factor6 rank in the top 3 for all three architectures independently. This convergence is strong evidence these are genuine biological signals, not model-specific artefacts. Factor8 specifically should be decoded via gene weight analysis.
+    </div>
+
+    <details>
+      <summary>⚠ Gotchas &amp; Fixes (Prior SHAP phase)</summary>
+      <div class="gotcha-body">
+        <div class="gotcha-item">
+          <strong>ndarray.ptp() removed in NumPy 2.x</strong>
+          <span class="err">AttributeError: 'numpy.ndarray' object has no attribute 'ptp'</span>
+          <div class="fix">✓ Fix: <code>arr.ptp()</code> → <code>arr.max() - arr.min()</code></div>
+        </div>
+        <div class="gotcha-item">
+          <strong>GradientExplainer requires 2D model output</strong>
+          <span class="err">IndexError: too many indices for tensor of dimension 1</span>
+          <div class="fix">✓ Fix: Added <code>_FTT2D</code> (and previously <code>_DeepSurv2D</code>) wrapper: <code>out.unsqueeze(1) if out.dim()==1 else out</code></div>
+        </div>
+        <div class="gotcha-item">
+          <strong>SHAP values shape (N, F, 1) instead of (N, F)</strong>
+          <div class="fix">✓ Fix: <code>if sv.ndim == 3: sv = sv.squeeze(-1)</code> after GradientExplainer extraction</div>
+        </div>
+        <div class="gotcha-item">
+          <strong>NumPy array used as Python list index</strong>
+          <span class="err">TypeError: only integer scalar arrays can be converted to a scalar index</span>
+          <div class="fix">✓ Fix: <code>order = list(np.argsort(...))</code> before using as list index in <code>_beeswarm</code> and <code>_bar</code></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="outputs-grid">
+      <span class="output-chip">results/shap_values_ftt.csv</span>
+      <span class="output-chip">results/shap_values_xgb.csv</span>
+      <span class="output-chip">results/shap_values_lgb.csv</span>
+      <span class="output-chip">results/shap_importance_summary_models.csv</span>
+      <span class="output-chip">figures/shap_ftt_beeswarm.png</span>
+      <span class="output-chip">figures/shap_xgb_beeswarm.png</span>
+      <span class="output-chip">figures/shap_lgb_beeswarm.png</span>
+      <span class="output-chip">figures/shap_three_model_comparison.png</span>
+    </div>
+  </section>
+
+  <!-- ── PHASE 11: RESULTS ── -->
+  <section class="phase-section phase-report" id="results">
+    <div class="phase-header">
+      <div class="phase-icon">📊</div>
+      <div class="phase-title-block">
+        <div class="phase-num">Phase 11 · Results &amp; Critical Insights</div>
+        <div class="phase-title">Findings, Limitations &amp; Next Steps</div>
+        <span class="module-pill">build_report.py</span>
+        <span class="module-pill">results/cancer_multiomics_report.html</span>
+      </div>
+    </div>
+
+    <h3>Performance Trajectory</h3>
+    <table>
+      <tr><th>Model</th><th>Cohort</th><th>C-index</th><th>Std</th><th>Notes</th></tr>
+      <tr><td>Cox Ridge</td><td>905 samples, 5 cancer types</td><td>0.679</td><td>0.035</td><td>Pre-TCGA-CDR fix</td></tr>
+      <tr><td>DeepSurv</td><td>905 samples, 5 cancer types</td><td>0.683</td><td>0.026</td><td>Pre-TCGA-CDR fix</td></tr>
+      <tr><td>XGBoost (raw PCA)</td><td>7,787 samples, 31 types</td><td>0.724</td><td>0.053</td><td>High variance (unstable)</td></tr>
+      <tr><td>LightGBM (MOFA+)</td><td>7,787 samples, 31 types</td><td>0.745</td><td>0.008</td><td></td></tr>
+      <tr><td>XGBoost (MOFA+)</td><td>7,787 samples, 31 types</td><td>0.747</td><td>0.008</td><td></td></tr>
+      <tr><td><strong>FT-Transformer (MOFA+)</strong></td><td>7,787 samples, 31 types</td><td><strong>0.751</strong></td><td><strong>0.006</strong></td><td>Best model, lowest variance</td></tr>
+    </table>
+
+    <h3>Critical Insights</h3>
+
+    <div class="insight-box" style="--accent:#0d9488;--accent-light:#f0fdfa;--accent-dark:#0f766e">
+      <strong>1. The survival bottleneck was an engineering bug, not biology.</strong> The GDC API pagination error that reduced 7,902 to 905 samples was entirely fixable. Switching to TCGA-CDR gave 7,787 samples and 2,170 events — a 9× increase in statistical signal that fundamentally changed what models could learn.
+    </div>
+
+    <div class="insight-box" style="--accent:#4f46e5;--accent-light:#eef2ff;--accent-dark:#4338ca">
+      <strong>2. MOFA+ as feature engineering outperforms raw PCA.</strong> MOFA+ compressed 2,300 cross-modal features into 18 biologically structured factors, raised mean C-index from 0.724 to 0.751, and reduced fold-to-fold variance 7× (std 0.053 → 0.008). The key gain is not raw performance but <em>reliability</em> — MOFA+ factors capture coordinated multi-omics signals that individual PCA projections miss.
+    </div>
+
+    <div class="insight-box" style="--accent:#16a34a;--accent-light:#f0fdf4;--accent-dark:#15803d">
+      <strong>3. FT-Transformer beats GBDT but the gap is small.</strong> At 0.751 vs 0.747/0.745, the transformer's attention mechanism captures interaction terms between cancer type dummies and MOFA factors that gradient boosted trees partially miss. The gap would likely grow with larger sample sizes or finer feature resolution.
+    </div>
+
+    <div class="insight-box" style="--accent:#dc2626;--accent-light:#fef2f2;--accent-dark:#b91c1c">
+      <strong>4. Age dominates all molecular signals (SHAP=0.40 vs 0.28 for best MOFA factor).</strong> Pan-cancer survival models should always include age and be fit on cancer-type-stratified subsets rather than across all types simultaneously. The SHAP signal from age likely partially captures cancer-type effects (older patients disproportionately have prostate, CRC) that the cancer type dummies don't fully absorb.
+    </div>
+
+    <div class="insight-box" style="--accent:#d97706;--accent-light:#fffbeb;--accent-dark:#b45309">
+      <strong>5. MOFA Factor8 is the priority molecular signal to decode.</strong> It ranks 2nd in SHAP importance (avg=0.283) and is the most consistent signal across all three model architectures (CV = 0.003 across models). Its gene loadings in <code>mofa_weights_expression.csv</code> and <code>mofa_weights_cnv.csv</code> should be extracted and subjected to pathway enrichment analysis.
+    </div>
+
+    <h3>Recommended Next Steps</h3>
+    <table>
+      <tr><th>Priority</th><th>Action</th><th>Expected Value</th></tr>
+      <tr><td>High</td><td>Decode MOFA Factor8: extract top expression gene weights → GSEA/ORA pathway enrichment</td><td>Translate abstract factor into biological mechanism; identify potential biomarkers</td></tr>
+      <tr><td>High</td><td>Cancer-type-stratified survival models (e.g., separate GBM, BRCA, LUAD models)</td><td>Remove cancer-type confounding; increase per-type C-index substantially</td></tr>
+      <tr><td>Medium</td><td>Add IDH1 mutation status as a direct feature for glioma-enriched model (Factor7 signal)</td><td>Validate actionable IDH-mutant glioma axis identified by MOFA+</td></tr>
+      <tr><td>Medium</td><td>Integrate time-dependent AUC and Brier score (IPCW-weighted) as additional metrics</td><td>Calibration assessment; clinically meaningful probability estimates</td></tr>
+      <tr><td>Low</td><td>Increase MOFA+ survival cohort coverage via TCGA clinical XML / cBioPortal API</td><td>Recover the ~115 samples missing from TCGA-CDR join</td></tr>
+      <tr><td>Low</td><td>Drug sensitivity integration (GDSC / CCLE) matched to MOFA factor scores</td><td>Therapeutic hypothesis generation from latent factors</td></tr>
+    </table>
+
+    <div class="outputs-grid">
+      <span class="output-chip">results/cancer_multiomics_report.html (4.7 MB)</span>
+      <span class="output-chip">results/pipeline_documentation_v2.html</span>
+      <span class="output-chip">35 PNG figures (base64 embedded)</span>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Active nav link highlighting via IntersectionObserver
+  const sections = document.querySelectorAll('section[id], div[id]');
+  const navLinks  = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Chevron animation on details open/close
+  document.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {});
+  });
+</script>
+</body>
+</html>

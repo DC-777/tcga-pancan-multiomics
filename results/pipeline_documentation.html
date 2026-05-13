@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCGA Pan-Cancer Pipeline Documentation</title>
+<style>
+  :root {
+    --navy: #0f172a;
+    --navy-light: #1e293b;
+    --navy-border: #334155;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --white: #f8fafc;
+    --c-teal:    #0d9488; --c-teal-bg:    #ccfbf1; --c-teal-light: #f0fdfa;
+    --c-blue:    #2563eb; --c-blue-bg:    #dbeafe; --c-blue-light: #eff6ff;
+    --c-purple:  #7c3aed; --c-purple-bg:  #ede9fe; --c-purple-light:#faf5ff;
+    --c-orange:  #ea580c; --c-orange-bg:  #ffedd5; --c-orange-light:#fff7ed;
+    --c-red:     #dc2626; --c-red-bg:     #fee2e2; --c-red-light:   #fef2f2;
+    --c-amber:   #d97706; --c-amber-bg:   #fef3c7; --c-amber-light: #fffbeb;
+    --c-green:   #16a34a; --c-green-bg:   #dcfce7; --c-green-light: #f0fdf4;
+    --c-emerald: #059669; --c-emerald-bg: #d1fae5; --c-emerald-light:#ecfdf5;
+    --c-slate:   #475569; --c-slate-bg:   #f1f5f9; --c-slate-light: #f8fafc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.65;
+    background: #f1f5f9; color: #1e293b;
+    display: flex; min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: 260px; min-width: 260px; background: var(--navy);
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    display: flex; flex-direction: column; z-index: 50;
+    scrollbar-width: thin; scrollbar-color: var(--navy-border) transparent;
+  }
+  .sidebar-header {
+    padding: 24px 20px 16px; border-bottom: 1px solid var(--navy-border);
+  }
+  .sidebar-header h1 {
+    font-size: 13px; font-weight: 700; color: #f8fafc;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .sidebar-header p { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  nav { padding: 12px 0; flex: 1; }
+  nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px; color: var(--text-muted);
+    text-decoration: none; font-size: 12.5px;
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent;
+  }
+  nav a:hover { background: var(--navy-light); color: #f8fafc; }
+  nav a.active { background: var(--navy-light); color: #f8fafc; border-left-color: currentColor; }
+  .nav-badge {
+    font-size: 9px; font-weight: 700; padding: 2px 6px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: .05em;
+    flex-shrink: 0; margin-left: auto;
+  }
+  .nav-num {
+    font-size: 10px; font-weight: 600; width: 18px; height: 18px;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; background: var(--navy-border); color: var(--text-muted);
+  }
+  nav a.active .nav-num { background: currentColor; color: var(--navy); }
+  .sidebar-footer {
+    padding: 14px 20px; border-top: 1px solid var(--navy-border);
+    font-size: 11px; color: var(--text-dim);
+  }
+
+  /* ── MAIN ── */
+  main { flex: 1; min-width: 0; padding: 32px 36px 80px; max-width: 1040px; }
+
+  /* ── OVERVIEW BANNER ── */
+  .overview-banner {
+    background: var(--navy); color: #f8fafc;
+    border-radius: 12px; padding: 32px 36px; margin-bottom: 36px;
+  }
+  .overview-banner h2 { font-size: 1.5rem; margin-bottom: 6px; }
+  .overview-banner p { color: var(--text-muted); font-size: 13px; max-width: 640px; margin-bottom: 28px; }
+
+  /* ── PIPELINE FLOW ── */
+  .pipe-flow {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    margin: 4px 0 0;
+  }
+  .pipe-node {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 5px; flex-shrink: 0;
+  }
+  .pipe-box {
+    padding: 7px 12px; border-radius: 7px; font-size: 10.5px; font-weight: 600;
+    text-align: center; white-space: nowrap; min-width: 88px;
+    letter-spacing: .01em;
+  }
+  .pipe-label { font-size: 9px; color: var(--text-muted); text-align: center; }
+  .pipe-arrow {
+    width: 20px; height: 2px; background: var(--navy-border);
+    flex-shrink: 0; position: relative; margin-top: -18px;
+  }
+  .pipe-arrow::after {
+    content: ''; position: absolute; right: -1px; top: -4px;
+    border: 5px solid transparent; border-left: 7px solid var(--navy-border);
+  }
+
+  /* ── SECTION ── */
+  section {
+    background: #fff; border-radius: 10px; padding: 30px 32px;
+    margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    scroll-margin-top: 20px;
+  }
+  .section-head {
+    display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px;
+    padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;
+  }
+  .phase-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .section-head-text h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+  .section-head-text p { font-size: 12.5px; color: #64748b; }
+
+  /* pills */
+  .pill-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+
+  /* params table */
+  .params-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 0; }
+  .params-table th {
+    background: #f8fafc; padding: 7px 12px; text-align: left;
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .05em; color: #64748b; border-bottom: 2px solid #e2e8f0;
+  }
+  .params-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .params-table td:first-child { font-family: monospace; font-size: 12px; color: #1e293b; font-weight: 500; }
+  .params-table td:nth-child(2) { color: #0369a1; font-family: monospace; font-size: 12px; }
+  .params-table td:last-child { color: #475569; }
+  .params-table tr:last-child td { border-bottom: none; }
+  .table-wrap { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 14px 0; }
+
+  /* subsection label */
+  .sub-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; margin: 22px 0 10px; color: #94a3b8;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sub-label::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+
+  /* flow diagram (section-level) */
+  .flow-row {
+    display: flex; align-items: center; gap: 0;
+    background: #f8fafc; border-radius: 8px; padding: 16px 18px;
+    overflow-x: auto; margin: 14px 0;
+  }
+  .flow-box {
+    padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    white-space: nowrap; border: 1.5px solid;
+  }
+  .flow-arr {
+    flex-shrink: 0; display: flex; align-items: center;
+    padding: 0 4px; color: #94a3b8; font-size: 13px;
+  }
+
+  /* outputs grid */
+  .outputs-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 8px; margin: 10px 0; }
+  .output-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 6px 10px; font-size: 11.5px; font-family: monospace;
+  }
+  .output-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  /* collapsible */
+  details {
+    margin: 18px 0; border: 1px solid #fca5a5;
+    border-radius: 8px; overflow: hidden;
+  }
+  details.green { border-color: #86efac; }
+  details.amber { border-color: #fcd34d; }
+  summary {
+    display: flex; align-items: center; gap: 9px;
+    padding: 11px 16px; cursor: pointer; user-select: none;
+    background: #fef2f2; font-size: 12.5px; font-weight: 600;
+    list-style: none; outline: none;
+  }
+  details.green summary { background: #f0fdf4; }
+  details.amber summary { background: #fffbeb; }
+  summary::-webkit-details-marker { display: none; }
+  .chevron {
+    margin-left: auto; transition: transform .2s; font-size: 13px; color: #94a3b8;
+  }
+  details[open] .chevron { transform: rotate(180deg); }
+  .details-body { padding: 14px 16px; font-size: 12.5px; }
+  .err-row { margin: 8px 0; }
+  .err-label { font-family: monospace; font-size: 11.5px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 4px; }
+  .fix-label { font-family: monospace; font-size: 11.5px; background: #dcfce7; color: #15803d; padding: 2px 7px; border-radius: 4px; margin-left: 6px; }
+  .err-desc { margin-top: 4px; margin-left: 2px; color: #475569; }
+
+  /* data source cards */
+  .ds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .ds-card {
+    border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;
+    background: #f8fafc;
+  }
+  .ds-card .ds-name { font-weight: 700; font-size: 12.5px; margin-bottom: 3px; }
+  .ds-card .ds-file { font-family: monospace; font-size: 11px; color: #0369a1; }
+  .ds-card .ds-size { font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
+  .ds-card .ds-note { font-size: 11px; color: #64748b; margin-top: 5px; }
+
+  /* result badge */
+  .result-box {
+    border-radius: 8px; padding: 14px 18px; margin: 12px 0;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .result-box .r-val { font-size: 1.6rem; font-weight: 800; }
+  .result-box .r-desc { font-size: 12px; color: #475569; }
+  .result-box .r-desc strong { display: block; font-size: 13px; color: #1e293b; margin-bottom: 2px; }
+
+  /* fold table */
+  .fold-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+  .fold-chip {
+    background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 5px 12px; font-size: 12px; text-align: center;
+  }
+  .fold-chip .fc-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; }
+  .fold-chip .fc-val { font-weight: 700; font-size: 13px; }
+
+  /* architecture diagram */
+  .arch-flow {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    background: #f8fafc; border-radius: 8px; padding: 16px 18px; margin: 12px 0;
+  }
+  .arch-row { display: flex; align-items: center; gap: 10px; }
+  .arch-box {
+    padding: 6px 14px; border-radius: 6px; font-size: 11.5px;
+    font-family: monospace; font-weight: 600; border: 1.5px solid;
+  }
+  .arch-arr { color: #94a3b8; font-size: 16px; }
+  .arch-ann { font-size: 11px; color: #64748b; margin-left: 4px; }
+
+  /* mofa factor cards */
+  .factor-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 12px 0; }
+  .factor-card { border-radius: 8px; padding: 12px 14px; border: 1px solid; }
+  .factor-card h4 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .factor-card ul { font-size: 11.5px; padding-left: 14px; }
+  .factor-card li { margin: 2px 0; }
+
+  @media(max-width: 900px) {
+    aside { display: none; }
+    main { padding: 20px; }
+    .ds-grid { grid-template-columns: 1fr; }
+    .factor-grid { grid-template-columns: 1fr 1fr; }
+    .pipe-flow { gap: 4px; }
+    .pipe-arrow { width: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<aside>
+  <div class="sidebar-header">
+    <h1>Pipeline Docs</h1>
+    <p>TCGA Pan-Cancer · Multi-Omics</p>
+  </div>
+  <nav>
+    <a href="#overview">
+      <span class="nav-num">0</span>
+      Overview &amp; Architecture
+    </a>
+    <a href="#phase1" style="color:var(--c-teal)">
+      <span class="nav-num" style="background:var(--c-teal);color:#fff">1</span>
+      Data Retrieval
+      <span class="nav-badge" style="background:var(--c-teal-bg);color:var(--c-teal)">Data</span>
+    </a>
+    <a href="#phase2" style="color:var(--c-blue)">
+      <span class="nav-num" style="background:var(--c-blue);color:#fff">2</span>
+      Preprocessing
+      <span class="nav-badge" style="background:var(--c-blue-bg);color:var(--c-blue)">Prep</span>
+    </a>
+    <a href="#phase3" style="color:var(--c-purple)">
+      <span class="nav-num" style="background:var(--c-purple);color:#fff">3</span>
+      PCA + UMAP
+      <span class="nav-badge" style="background:var(--c-purple-bg);color:var(--c-purple)">Dim</span>
+    </a>
+    <a href="#phase4" style="color:var(--c-orange)">
+      <span class="nav-num" style="background:var(--c-orange);color:#fff">4</span>
+      Clustering
+      <span class="nav-badge" style="background:var(--c-orange-bg);color:var(--c-orange)">Unsup</span>
+    </a>
+    <a href="#phase5a" style="color:var(--c-red)">
+      <span class="nav-num" style="background:var(--c-red);color:#fff">5A</span>
+      Cox Ridge
+      <span class="nav-badge" style="background:var(--c-red-bg);color:var(--c-red)">Surv</span>
+    </a>
+    <a href="#phase5b" style="color:var(--c-amber)">
+      <span class="nav-num" style="background:var(--c-amber);color:#fff">5B</span>
+      DeepSurv
+      <span class="nav-badge" style="background:var(--c-amber-bg);color:var(--c-amber)">DL</span>
+    </a>
+    <a href="#phase6" style="color:var(--c-green)">
+      <span class="nav-num" style="background:var(--c-green);color:#fff">6</span>
+      SHAP
+      <span class="nav-badge" style="background:var(--c-green-bg);color:var(--c-green)">XAI</span>
+    </a>
+    <a href="#phase7" style="color:var(--c-emerald)">
+      <span class="nav-num" style="background:var(--c-emerald);color:#fff">7</span>
+      MOFA+
+      <span class="nav-badge" style="background:var(--c-emerald-bg);color:var(--c-emerald)">Factor</span>
+    </a>
+    <a href="#phase8" style="color:var(--c-slate)">
+      <span class="nav-num" style="background:var(--c-slate);color:#fff">8</span>
+      Results Report
+      <span class="nav-badge" style="background:var(--c-slate-bg);color:var(--c-slate)">Out</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    7,902 samples · 31 cancer types<br>Python 3.14.3 · CPU only
+  </div>
+</aside>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<main>
+
+<!-- ─── OVERVIEW BANNER ─── -->
+<div class="overview-banner" id="overview">
+  <h2>TCGA Pan-Cancer Multi-Omics Pipeline</h2>
+  <p>End-to-end analytical pipeline from raw data retrieval through unsupervised discovery, supervised survival modeling, SHAP interpretation, and multi-omics factor analysis across 7,902 primary tumor samples spanning 31 cancer types.</p>
+
+  <div class="pipe-flow">
+    <!-- Phase 1 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#134e4a;color:#5eead4;border:1.5px solid #0d9488">① Retrieval</div>
+      <div class="pipe-label">UCSC + GDC APIs</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 2 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#1e3a5f;color:#93c5fd;border:1.5px solid #2563eb">② Preprocess</div>
+      <div class="pipe-label">Align + Filter</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 3 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#3b0764;color:#c4b5fd;border:1.5px solid #7c3aed">③ PCA/UMAP</div>
+      <div class="pipe-label">Dim Reduction</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 4 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#431407;color:#fdba74;border:1.5px solid #ea580c">④ Cluster</div>
+      <div class="pipe-label">K-means+Leiden</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 5A -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#450a0a;color:#fca5a5;border:1.5px solid #dc2626">⑤A Cox</div>
+      <div class="pipe-label">C-idx 0.679</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 5B -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#451a03;color:#fcd34d;border:1.5px solid #d97706">⑤B DeepSurv</div>
+      <div class="pipe-label">C-idx 0.683</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 6 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#052e16;color:#86efac;border:1.5px solid #16a34a">⑥ SHAP</div>
+      <div class="pipe-label">Explainability</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 7 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#022c22;color:#6ee7b7;border:1.5px solid #059669">⑦ MOFA+</div>
+      <div class="pipe-label">13 Factors</div>
+    </div>
+    <div class="pipe-arrow"></div>
+    <!-- Phase 8 -->
+    <div class="pipe-node">
+      <div class="pipe-box" style="background:#0f172a;color:#94a3b8;border:1.5px solid #475569">⑧ Report</div>
+      <div class="pipe-label">HTML Output</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ PHASE 1 — DATA RETRIEVAL ═══════════════════════ -->
+<section id="phase1">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-teal-bg)">🗄️</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-teal)">Phase 1 · Data Retrieval</h2>
+      <p>Download raw TCGA pan-cancer multi-omics data from distributed public repositories</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#f0fdfa;color:var(--c-teal);border:1px solid #99f6e4">📄 download_tcga.py</span>
+        <span class="pill" style="background:#f0fdfa;color:var(--c-teal);border:1px solid #99f6e4">📄 convert_to_csv.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Data Sources</div>
+  <div class="ds-grid">
+    <div class="ds-card">
+      <div class="ds-name">🧬 Gene Expression (RNA-seq)</div>
+      <div class="ds-file">tcga_RSEM_gene_tpm.gz</div>
+      <div class="ds-size">~1.8 GB · UCSC TOIL recompute hub</div>
+      <div class="ds-note">TOIL-normalized log₂(TPM); RSEM quantification; Ensembl gene IDs with version suffix</div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-name">🔬 Somatic Mutations (MC3)</div>
+      <div class="ds-file">mc3.v0.2.8.PUBLIC.xena.gz</div>
+      <div class="ds-size">~80 MB · UCSC pancanatlas hub</div>
+      <div class="ds-note">MC3 unified calling pipeline; MAF format; all variant types included pre-filter</div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-name">🧩 Copy Number (GISTIC2)</div>
+      <div class="ds-file">Gistic2_CopyNumber_Gistic2_all_thresholded.by_genes.gz</div>
+      <div class="ds-size">~60 MB · UCSC legacy TCGA hub</div>
+      <div class="ds-note">Gene-level thresholded calls: −2 (homdel), −1, 0, +1, +2 (amp)</div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-name">🏥 Clinical Phenotype</div>
+      <div class="ds-file">TCGA_phenotype_denseDataOnlyDownload.tsv.gz</div>
+      <div class="ds-size">~2 MB · UCSC pancanatlas hub</div>
+      <div class="ds-note">Sample type, primary disease, sample_type_id (1 = primary tumor)</div>
+    </div>
+    <div class="ds-card" style="grid-column: span 2;">
+      <div class="ds-name">⚕️ Survival Data</div>
+      <div class="ds-file">gdc_clinical_survival.tsv</div>
+      <div class="ds-size">Variable · GDC REST API (paginated)</div>
+      <div class="ds-note">Endpoint: <code style="font-size:11px">https://api.gdc.cancer.gov/cases</code> · fields: demographic.vital_status, demographic.days_to_death, diagnoses.*.days_to_last_follow_up, diagnoses.*.age_at_diagnosis · downloaded as paginated TSV chunks (1000 cases/page), concatenated to single plain TSV (no compression)</div>
+    </div>
+  </div>
+
+  <div class="sub-label">Download Strategy</div>
+  <div class="flow-row">
+    <div class="flow-box" style="background:#f0fdfa;border-color:var(--c-teal);color:var(--c-teal)">Registry dict<br>(url, filename, subfolder)</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#f0fdfa;border-color:var(--c-teal);color:var(--c-teal)">download_file()<br>stream + tqdm</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#f0fdfa;border-color:var(--c-teal);color:var(--c-teal)">Resume check<br>(skip if exists &gt;0B)</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#f0fdfa;border-color:var(--c-teal);color:var(--c-teal)">Retry ×3<br>(10s backoff)</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#f0fdfa;border-color:var(--c-teal);color:var(--c-teal)">convert_to_csv()<br>.gz → .csv</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#f0fdfa;border-color:var(--c-teal);color:var(--c-teal)">data/csv/<br>all modalities</div>
+  </div>
+
+  <div class="sub-label">Outputs</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-teal)"></div>data/csv/expression_RSEM_gene_tpm.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-teal)"></div>data/csv/mutations_mc3_somatic.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-teal)"></div>data/csv/copy_number_GISTIC2_gene_level.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-teal)"></div>data/csv/clinical_phenotype.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-teal)"></div>data/csv/clinical_survival.csv</div>
+  </div>
+
+  <details>
+    <summary>
+      ⚠️ Gotchas &amp; Fixes (3 issues)
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="details-body">
+      <div class="err-row">
+        <span class="err-label">403 Forbidden</span><span class="fix-label">Multi-hub strategy</span>
+        <div class="err-desc">pancanatlas.xenahubs.net S3 bucket locked down direct downloads for 6 files. Fix: probed alternative hubs — TOIL hub for expression, legacy TCGA hub for CNV, GDC REST API for survival. Updated registry URLs per modality.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">UnicodeEncodeError cp1252 '→'</span><span class="fix-label">Replace → with -></span>
+        <div class="err-desc">Arrow character → in a <code>print()</code> statement inside convert_to_csv.py crashed Windows console (cp1252 codec). Fix: replaced with ASCII <code>-></code>.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">clinical_survival.csv read with index_col=0</span><span class="fix-label">Remove index_col parameter</span>
+        <div class="err-desc">The GDC TSV's first column (days_to_death) became the DataFrame index when read with index_col=0, making it inaccessible as a regular column in preprocess.py. Fix: read without index_col.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 2 — PREPROCESSING ═══════════════════════ -->
+<section id="phase2">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-blue-bg)">⚙️</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-blue)">Phase 2 · Preprocessing &amp; Alignment</h2>
+      <p>Load, clean, filter, and align all four modalities into a unified MultiomicsDataset</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#eff6ff;color:var(--c-blue);border:1px solid #bfdbfe">📄 src/preprocess.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Data Container</div>
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin:10px 0;font-family:monospace;font-size:12.5px;line-height:1.8">
+    <span style="color:#7c3aed">@dataclass</span> <span style="color:#1d4ed8">MultiomicsDataset</span>:<br>
+    &nbsp;&nbsp;expression: <span style="color:#0369a1">DataFrame</span> <span style="color:#94a3b8"># (samples × genes) log₂TPM</span><br>
+    &nbsp;&nbsp;mutations:  <span style="color:#0369a1">DataFrame</span> <span style="color:#94a3b8"># (samples × genes) binary int8</span><br>
+    &nbsp;&nbsp;cnv:        <span style="color:#0369a1">DataFrame</span> <span style="color:#94a3b8"># (samples × genes) float32 −2..+2</span><br>
+    &nbsp;&nbsp;clinical:   <span style="color:#0369a1">DataFrame</span> <span style="color:#94a3b8"># cancer_type, OS_time, OS_event, age_at_dx</span><br>
+    &nbsp;&nbsp;cancer_types: <span style="color:#0369a1">Series</span>  <span style="color:#94a3b8"># sample → TCGA disease name</span>
+  </div>
+
+  <div class="sub-label">Processing Steps per Modality</div>
+  <div class="flow-row">
+    <div class="flow-box" style="background:#eff6ff;border-color:var(--c-blue);color:var(--c-blue)">Raw CSV<br>genes×samples</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#eff6ff;border-color:var(--c-blue);color:var(--c-blue)">Strip Ensembl<br>.version suffix</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#eff6ff;border-color:var(--c-blue);color:var(--c-blue)">Replace floor<br>sentinel −9.95→0</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#eff6ff;border-color:var(--c-blue);color:var(--c-blue)">Transpose<br>→ samples×genes</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#eff6ff;border-color:var(--c-blue);color:var(--c-blue)">Top 5,000<br>by variance</div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:14px">
+    <table class="params-table">
+      <thead><tr><th>Modality</th><th>Key Operation</th><th>Parameter / Rule</th><th>Output Shape</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Expression</td>
+          <td>Variance filter</td>
+          <td>n_top_genes = 5000 · EXPR_FLOOR = −9.95 (log₂(0.001)) replaced with 0</td>
+          <td>7,902 × 5,000</td>
+        </tr>
+        <tr>
+          <td>Mutations</td>
+          <td>Nonsynonymous filter + pivot</td>
+          <td>min_mut_freq = 0.02 (2%) · barcode truncated to 15 chars · 10 effect types kept</td>
+          <td>7,902 × 1,490</td>
+        </tr>
+        <tr>
+          <td>CNV</td>
+          <td>Transpose + cast</td>
+          <td>float32 · GISTIC2 values −2 to +2 · no frequency filter</td>
+          <td>7,902 × 24,776</td>
+        </tr>
+        <tr>
+          <td>Clinical</td>
+          <td>Multi-column follow-up merge</td>
+          <td>best_fu = max(diagnoses.*.days_to_last_follow_up) · OS_time = days_to_death if dead else best_fu</td>
+          <td>7,902 × 5</td>
+        </tr>
+        <tr>
+          <td>Alignment</td>
+          <td>4-way intersection</td>
+          <td>Primary tumors only: barcode suffix == "01" · 7,902 samples survive</td>
+          <td>7,902 shared</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Nonsynonymous Mutation Effects Kept</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Missense_Mutation</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Nonsense_Mutation</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Frame_Shift_Del</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Frame_Shift_Ins</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Splice_Site</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">In_Frame_Del</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">In_Frame_Ins</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Nonstop_Mutation</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">Translation_Start_Site</span>
+    <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;font-size:11.5px;font-family:monospace">large deletion</span>
+  </div>
+
+  <div class="sub-label">Gene Symbol Mapping</div>
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:12.5px;">
+    Queried <strong>mygene.info</strong> REST API with 5,000 Ensembl IDs (batches of 1,000) → <strong>4,389 / 5,000 resolved to HGNC symbols</strong>. Unmapped IDs retained as Ensembl IDs. Symbol map saved to <code style="font-size:11px">results/gene_id_to_symbol.csv</code> and applied at load time in <code style="font-size:11px">load_multiomics()</code>.
+  </div>
+
+  <div class="sub-label">Final Cohort Stats</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0">
+    <div style="background:#eff6ff;border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:100px">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--c-blue)">7,902</div>
+      <div style="font-size:11px;color:#64748b">Primary tumor samples</div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:100px">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--c-blue)">31</div>
+      <div style="font-size:11px;color:#64748b">Cancer types</div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:100px">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--c-blue)">905</div>
+      <div style="font-size:11px;color:#64748b">With OS survival data</div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:100px">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--c-blue)">239</div>
+      <div style="font-size:11px;color:#64748b">Deaths (events)</div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:12px 16px;text-align:center;flex:1;min-width:100px">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--c-blue)">11.5%</div>
+      <div style="font-size:11px;color:#64748b">Survival coverage</div>
+    </div>
+  </div>
+
+  <details class="amber">
+    <summary>
+      ⚠️ Gotchas &amp; Fixes (2 issues)
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="details-body">
+      <div class="err-row">
+        <span class="err-label">Only 839 survival matches (low coverage)</span><span class="fix-label">Multi-column follow-up merge</span>
+        <div class="err-desc">Initial implementation only read <code>diagnoses.0.days_to_last_follow_up</code>. GDC stores follow-up time under any of up to 15 <code>diagnoses.N.*</code> slots depending on which diagnosis was primary for that patient. Fix: <code>best_fu = surv_raw[fu_cols].apply(pd.to_numeric, errors="coerce").max(axis=1)</code> where <code>fu_cols</code> is all columns matching <code>"days_to_last_follow_up"</code>. Improved to 905 matched samples.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">Gene symbol counter showed "0 / 5000"</span><span class="fix-label">Move count before rename</span>
+        <div class="err-desc">The counter checking <code>g in sym.index</code> ran after <code>expr.columns</code> had already been renamed to HGNC symbols, so Ensembl IDs were no longer present to look up. Fix: compute count before applying the column rename.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 3 — PCA + UMAP ═══════════════════════ -->
+<section id="phase3">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-purple-bg)">📐</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-purple)">Phase 3 · PCA + UMAP Dimensionality Reduction</h2>
+      <p>Project 5,000-dimensional expression space into a 2D visual manifold</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#faf5ff;color:var(--c-purple);border:1px solid #ddd6fe">📄 src/unsupervised/dim_reduction.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Pipeline</div>
+  <div class="flow-row">
+    <div class="flow-box" style="background:#faf5ff;border-color:var(--c-purple);color:var(--c-purple)">Expression<br>7,902 × 5,000</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#faf5ff;border-color:var(--c-purple);color:var(--c-purple)">StandardScaler<br>zero mean, unit var</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#faf5ff;border-color:var(--c-purple);color:var(--c-purple)">PCA(50)<br>sklearn</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#faf5ff;border-color:var(--c-purple);color:var(--c-purple)">UMAP<br>n_neighbors=30<br>min_dist=0.3</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#faf5ff;border-color:var(--c-purple);color:var(--c-purple)">2D coords<br>umap_coords.csv</div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="params-table">
+      <thead><tr><th>Parameter</th><th>Value</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>n_components (PCA)</td><td>50</td><td>Captures ~80%+ variance; standard for scRNA-seq / bulk TCGA workflows</td></tr>
+        <tr><td>n_neighbors (UMAP)</td><td>30</td><td>Balances local structure vs. global topology for large cohorts</td></tr>
+        <tr><td>min_dist (UMAP)</td><td>0.3</td><td>Moderate — allows visible clusters without over-packing</td></tr>
+        <tr><td>random_state</td><td>42</td><td>Reproducibility across runs</td></tr>
+        <tr><td>matplotlib backend</td><td>Agg</td><td>Headless rendering (no display); required on server environments</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Key Finding</div>
+  <div style="background:#faf5ff;border-left:4px solid var(--c-purple);border-radius:0 8px 8px 0;padding:12px 16px;margin:10px 0;font-size:13px">
+    Cancer histological type is the <strong>dominant axis of variation</strong> in expression space. Brain tumors, breast, and kidney cancers form tight, well-separated clusters on the UMAP. Thyroid and prostate are tightly packed (low intra-type heterogeneity). The 905 survival-annotated samples are broadly distributed across the manifold — no obvious survival-enriched region — making pan-cancer survival modeling an inherently noisy task.
+  </div>
+
+  <div class="sub-label">Outputs</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-purple)"></div>results/umap_coords.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-purple)"></div>results/figures/pca_scree.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-purple)"></div>results/figures/umap_cancer_type.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-purple)"></div>results/figures/umap_survival.png</div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 4 — CLUSTERING ═══════════════════════ -->
+<section id="phase4">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-orange-bg)">🔵</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-orange)">Phase 4 · Unsupervised Clustering</h2>
+      <p>Discover molecular subtypes via complementary clustering algorithms on the PCA embedding</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#fff7ed;color:var(--c-orange);border:1px solid #fed7aa">📄 src/unsupervised/clustering.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0">
+    <div style="border:2px solid var(--c-orange);border-radius:8px;padding:16px">
+      <h3 style="color:var(--c-orange);font-size:13px;margin-bottom:10px">K-means (MiniBatchKMeans)</h3>
+      <div class="table-wrap">
+        <table class="params-table">
+          <thead><tr><th>Param</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>k range</td><td>2–25</td></tr>
+            <tr><td>n_init</td><td>10</td></tr>
+            <tr><td>batch_size</td><td>2,048</td></tr>
+            <tr><td>silhouette subsample</td><td>3,000</td></tr>
+            <tr><td>optimal k</td><td>2 (sil=0.287)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:#64748b">
+        ⚠️ k=2 is a <strong>pan-cancer artifact</strong>: one large heterogeneous mass (n=7,093) + one small outlier group (n=809). Silhouette is dominated by the large inter-cancer-type gap rather than within-type structure.
+      </div>
+    </div>
+    <div style="border:2px solid var(--c-orange);border-radius:8px;padding:16px">
+      <h3 style="color:var(--c-orange);font-size:13px;margin-bottom:10px">Leiden (Graph-based)</h3>
+      <div class="table-wrap">
+        <table class="params-table">
+          <thead><tr><th>Param</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>n_neighbors (KNN)</td><td>15</td></tr>
+            <tr><td>metric</td><td>euclidean</td></tr>
+            <tr><td>resolution</td><td>0.4</td></tr>
+            <tr><td>partition type</td><td>RBConfigurationVertexPartition</td></tr>
+            <tr><td>clusters found</td><td>22</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:#64748b">
+        ✅ <strong>log-rank p = 2.02×10⁻²⁴</strong> across cluster survival curves. Clusters highly enriched for individual cancer types — validates that Leiden recovers biologically coherent subtypes.
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Leiden Pipeline</div>
+  <div class="flow-row">
+    <div class="flow-box" style="background:#fff7ed;border-color:var(--c-orange);color:var(--c-orange)">PCA(50)<br>embedding</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#fff7ed;border-color:var(--c-orange);color:var(--c-orange)">sklearn<br>NearestNeighbors(15)</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#fff7ed;border-color:var(--c-orange);color:var(--c-orange)">igraph<br>(edges + 1/dist weights)</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#fff7ed;border-color:var(--c-orange);color:var(--c-orange)">leidenalg<br>RBConfig res=0.4</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#fff7ed;border-color:var(--c-orange);color:var(--c-orange)">22 clusters<br>membership array</div>
+  </div>
+
+  <div class="sub-label">Outputs (per method)</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>results/cluster_labels.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>figures/kmeans_selection.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>figures/umap_kmeans.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>figures/umap_leiden.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>figures/cluster_cancer_type_*.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>figures/cluster_survival_*.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-orange)"></div>figures/cluster_genes_*.png</div>
+  </div>
+
+  <details class="amber">
+    <summary>
+      ⚠️ Gotchas &amp; Fixes (1 issue)
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="details-body">
+      <div class="err-row">
+        <span class="err-label">ModuleNotFoundError: No module named 'matplotlib.colormaps'</span><span class="fix-label">Use matplotlib as _mpl</span>
+        <div class="err-desc">Attempted <code>import matplotlib.colormaps as _colormaps</code> — colormaps is an attribute of the matplotlib module, not a submodule. Fix: <code>import matplotlib as _mpl</code> then <code>_mpl.colormaps["tab20"]</code>. Same fix applied in shap_analysis.py.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 5A — COX RIDGE ═══════════════════════ -->
+<section id="phase5a">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-red-bg)">📈</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-red)">Phase 5A · Cox Ridge Survival Model</h2>
+      <p>L2-penalized proportional-hazards model with multi-omics feature engineering</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#fef2f2;color:var(--c-red);border:1px solid #fecaca">📄 src/supervised/cox_models.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Feature Engineering</div>
+  <div class="flow-row">
+    <div class="flow-box" style="background:#fef2f2;border-color:var(--c-red);color:var(--c-red)">Expression<br>PCA(50)</div>
+    <div class="flow-arr">+</div>
+    <div class="flow-box" style="background:#fef2f2;border-color:var(--c-red);color:var(--c-red)">Top-100<br>mutation genes<br>(binary)</div>
+    <div class="flow-arr">+</div>
+    <div class="flow-box" style="background:#fef2f2;border-color:var(--c-red);color:var(--c-red)">CNV<br>PCA(30)</div>
+    <div class="flow-arr">=</div>
+    <div class="flow-box" style="background:#fef2f2;border-color:var(--c-red);color:var(--c-red)">180 features<br>905 samples</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#fef2f2;border-color:var(--c-red);color:var(--c-red)">ElasticNetCV<br>pre-selection</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-box" style="background:#fef2f2;border-color:var(--c-red);color:var(--c-red)">80 features<br>selected</div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="params-table">
+      <thead><tr><th>Component</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>ElasticNet l1_ratio</td><td>[0.5, 0.7, 0.9, 1.0]</td><td>Cross-validated; selects most survival-associated features</td></tr>
+        <tr><td>ElasticNet max_iter</td><td>5,000</td><td>Target: ~80 features; fallback to top-|coef| if &lt;10 selected</td></tr>
+        <tr><td>CoxPHFitter penalizer</td><td>0.1</td><td>L2 ridge penalty (lifelines implementation)</td></tr>
+        <tr><td>CV strategy</td><td>StratifiedKFold(5)</td><td>Stratified by OS_event to balance event rates per fold</td></tr>
+        <tr><td>Scaling</td><td>StandardScaler</td><td>Fit on train set only within each fold; prevents data leakage</td></tr>
+        <tr><td>Metric</td><td>C-index (concordance)</td><td>Computed via lifelines.utils.concordance_index</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Results</div>
+  <div class="result-box" style="background:#fef2f2">
+    <div class="r-val" style="color:var(--c-red)">0.679</div>
+    <div class="r-desc"><strong>Mean C-index ± 0.035</strong>5-fold cross-validated · 905 samples · 239 events</div>
+  </div>
+  <div class="fold-row">
+    <div class="fold-chip"><div class="fc-label">Fold 1</div><div class="fc-val">0.632</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 2</div><div class="fc-val">0.711</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 3</div><div class="fc-val">0.665</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 4</div><div class="fc-val">0.658</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 5</div><div class="fc-val">0.727</div></div>
+  </div>
+
+  <div class="sub-label">Top Features by |log HR| (Cox)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">
+    <span style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;font-size:12px"><strong>EXPR_PC14</strong> HR=1.23 p=0.001</span>
+    <span style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;font-size:12px"><strong>CNV_PC15</strong> HR=1.14 p=0.024</span>
+    <span style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;font-size:12px"><strong>EXPR_PC1</strong> HR=1.14 p=0.024</span>
+    <span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:5px 10px;font-size:12px"><strong>EXPR_PC9</strong> HR=0.87 (prot.) p=0.089</span>
+    <span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:5px 10px;font-size:12px"><strong>EXPR_PC28</strong> HR=0.87 (prot.) p=0.021</span>
+  </div>
+
+  <div class="sub-label">Outputs</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-red)"></div>figures/cox_cv_cindex.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-red)"></div>figures/cox_hazard_ratios.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-red)"></div>figures/cox_risk_km.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-red)"></div>results/cox_feature_importance.csv</div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 5B — DEEPSURV ═══════════════════════ -->
+<section id="phase5b">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-amber-bg)">🧠</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-amber)">Phase 5B · DeepSurv Neural Network</h2>
+      <p>Deep neural network with Cox partial log-likelihood loss for survival prediction</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#fffbeb;color:var(--c-amber);border:1px solid #fde68a">📄 src/supervised/deepsurv.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Architecture</div>
+  <div class="arch-flow">
+    <div class="arch-row">
+      <div class="arch-box" style="background:#fffbeb;border-color:var(--c-amber);color:var(--c-amber)">Input (80)</div>
+      <span class="arch-arr">→</span>
+      <div class="arch-box" style="background:#fffbeb;border-color:var(--c-amber);color:var(--c-amber)">BatchNorm1d</div>
+      <span class="arch-arr">→</span>
+      <div class="arch-box" style="background:#fffbeb;border-color:var(--c-amber);color:var(--c-amber)">Linear(256) → BN → ReLU → Dropout(0.4)</div>
+      <span class="arch-arr">→</span>
+      <div class="arch-box" style="background:#fffbeb;border-color:var(--c-amber);color:var(--c-amber)">Linear(128) → BN → ReLU → Dropout</div>
+      <span class="arch-arr">→</span>
+      <div class="arch-box" style="background:#fffbeb;border-color:var(--c-amber);color:var(--c-amber)">Linear(64) → BN → ReLU → Dropout</div>
+      <span class="arch-arr">→</span>
+      <div class="arch-box" style="background:#fffbeb;border-color:var(--c-amber);color:var(--c-amber)">Linear(1) → risk score</div>
+    </div>
+  </div>
+
+  <div class="sub-label">Loss Function</div>
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin:10px 0;font-size:13px">
+    <strong>Breslow approximation of Cox partial log-likelihood</strong>
+    <div style="font-family:monospace;font-size:12px;margin-top:8px;color:#78350f;background:#fef3c7;padding:8px 12px;border-radius:6px">
+      L = −(1/|D|) · Σ_{i∈D} [θ_i − log Σ_{j: T_j ≥ T_i} exp(θ_j)]
+    </div>
+    <div style="font-size:12px;margin-top:6px;color:#64748b">Where D = set of uncensored (event) samples, θ = model risk score. Sort by descending time, then apply logcumsumexp for efficiency.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="params-table">
+      <thead><tr><th>Hyperparameter</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>optimizer</td><td>Adam</td><td>lr=1e-3, weight_decay=1e-4</td></tr>
+        <tr><td>lr scheduler</td><td>ReduceLROnPlateau</td><td>factor=0.5, patience=10 epochs</td></tr>
+        <tr><td>early stopping</td><td>patience=20</td><td>On internal 10% validation split per fold</td></tr>
+        <tr><td>max epochs</td><td>150</td><td>Typically stops ~28-38 due to early stopping</td></tr>
+        <tr><td>batch size</td><td>128</td><td>drop_last=True for stable BN statistics</td></tr>
+        <tr><td>dropout</td><td>0.4</td><td>Applied after each ReLU layer</td></tr>
+        <tr><td>device</td><td>CPU</td><td>No CUDA on this machine; torch 2.12.0+cpu</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Results</div>
+  <div class="result-box" style="background:#fffbeb">
+    <div class="r-val" style="color:var(--c-amber)">0.683</div>
+    <div class="r-desc"><strong>Mean C-index ± 0.026</strong>5-fold CV · lower variance than Cox Ridge · +0.004 Δ</div>
+  </div>
+  <div class="fold-row">
+    <div class="fold-chip"><div class="fc-label">Fold 1</div><div class="fc-val">0.648</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 2</div><div class="fc-val">0.718</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 3</div><div class="fc-val">0.683</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 4</div><div class="fc-val">0.661</div></div>
+    <div class="fold-chip"><div class="fc-label">Fold 5</div><div class="fc-val">0.706</div></div>
+  </div>
+
+  <div class="sub-label">Outputs</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-amber)"></div>figures/deepsurv_loss_curve.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-amber)"></div>figures/deepsurv_cv_cindex.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-amber)"></div>figures/deepsurv_risk_km.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-amber)"></div>figures/model_comparison_cindex.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-amber)"></div>results/deepsurv_feature_importance.csv</div>
+  </div>
+
+  <details>
+    <summary>
+      ⚠️ Gotchas &amp; Fixes (1 key issue)
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="details-body">
+      <div class="err-row">
+        <span class="err-label">scikit-survival incompatible with Python 3.14</span><span class="fix-label">lifelines + PyTorch directly</span>
+        <div class="err-desc">The <code>ecos</code> dependency of scikit-survival has no wheel for Python 3.14 and fails to compile from source. Fix: implemented DeepSurv entirely from scratch — <code>lifelines.CoxPHFitter</code> for the Cox model, and a custom PyTorch nn.Module with Breslow loss for DeepSurv. No scikit-survival dependency needed.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 6 — SHAP ═══════════════════════ -->
+<section id="phase6">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-green-bg)">🔍</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-green)">Phase 6 · SHAP Feature Interpretation</h2>
+      <p>Quantify per-sample feature contributions using model-appropriate SHAP methods</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#f0fdf4;color:var(--c-green);border:1px solid #bbf7d0">📄 src/supervised/shap_analysis.py</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0">
+    <div style="border:2px solid var(--c-green);border-radius:8px;padding:16px">
+      <h3 style="color:var(--c-green);font-size:13px;margin-bottom:8px">Cox Ridge — Exact Linear SHAP</h3>
+      <div style="font-family:monospace;font-size:12px;background:#f0fdf4;padding:8px 12px;border-radius:6px;margin-bottom:8px">
+        SHAP_i(x) = β_i × (x_i − Ē[x_i])
+      </div>
+      <p style="font-size:12px;color:#475569">Linear models have exact, closed-form SHAP values — no sampling required. Since features are StandardScaled, Ē[x_i] ≈ 0 and SHAP reduces to β_i × x_i per sample. This is equivalent to LinearExplainer output.</p>
+    </div>
+    <div style="border:2px solid var(--c-green);border-radius:8px;padding:16px">
+      <h3 style="color:var(--c-green);font-size:13px;margin-bottom:8px">DeepSurv — GradientExplainer</h3>
+      <div style="font-family:monospace;font-size:12px;background:#f0fdf4;padding:8px 12px;border-radius:6px;margin-bottom:8px">
+        shap.GradientExplainer(model_2d, background[100])
+      </div>
+      <p style="font-size:12px;color:#475569">Back-propagates expected gradients through the network. Background = 100-sample random subsample as the reference distribution. Wrapper class <code>_DeepSurv2D</code> added to keep output 2D (n, 1) as required by the explainer.</p>
+    </div>
+  </div>
+
+  <div class="sub-label">Top 10 Features by Average |SHAP| (both models)</div>
+  <div class="table-wrap">
+    <table class="params-table">
+      <thead><tr><th>#</th><th>Feature</th><th>Cox |SHAP|</th><th>DeepSurv |SHAP|</th><th>Average</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>EXPR_PC14</td><td>0.163</td><td>0.097</td><td>0.130</td></tr>
+        <tr><td>2</td><td>EXPR_PC9</td><td>0.117</td><td>0.133</td><td>0.125</td></tr>
+        <tr><td>3</td><td>EXPR_PC4</td><td>0.131</td><td>0.069</td><td>0.100</td></tr>
+        <tr><td>4</td><td>CNV_PC15</td><td>0.104</td><td>0.088</td><td>0.096</td></tr>
+        <tr><td>5</td><td>EXPR_PC50</td><td>0.085</td><td>0.071</td><td>0.078</td></tr>
+        <tr><td>6</td><td>MUT_USH2A</td><td>0.062</td><td>0.068</td><td>0.065</td></tr>
+        <tr><td>7</td><td>MUT_CSMD1</td><td>0.063</td><td>0.056</td><td>0.060</td></tr>
+        <tr><td>8</td><td>MUT_LAMA1</td><td>0.060</td><td>0.057</td><td>0.058</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Outputs</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>figures/shap_cox_beeswarm.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>figures/shap_cox_bar.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>figures/shap_deepsurv_beeswarm.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>figures/shap_deepsurv_bar.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>figures/shap_model_comparison.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>results/shap_values_cox.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>results/shap_values_deepsurv.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-green)"></div>results/shap_importance_summary.csv</div>
+  </div>
+
+  <details>
+    <summary>
+      ⚠️ Gotchas &amp; Fixes (3 issues)
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="details-body">
+      <div class="err-row">
+        <span class="err-label">AttributeError: ndarray has no attribute 'ptp'</span><span class="fix-label">Replace with .max() - .min()</span>
+        <div class="err-desc"><code>numpy.ndarray.ptp()</code> was removed in NumPy 2.x. Used for normalising feature values to 0–1 for colour mapping in the beeswarm plot. Fix: <code>(arr - arr.min()) / (arr.max() - arr.min() + 1e-9)</code>.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">IndexError: too many indices (shap shape (905, 80, 1))</span><span class="fix-label">_DeepSurv2D wrapper + squeeze(-1)</span>
+        <div class="err-desc"><code>GradientExplainer</code> requires 2D model output (n, 1), but our model squeezes to 1D (n,). Fix: added wrapper class <code>_DeepSurv2D(nn.Module)</code> that calls <code>out.unsqueeze(1)</code>. SHAP returns shape (905, 80, 1) — squeezed back to (905, 80) after extraction.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">TypeError: only integer scalar arrays can be converted to scalar index</span><span class="fix-label">Convert numpy array to list before indexing Python list</span>
+        <div class="err-desc"><code>np.argsort()</code> returns a numpy array; indexing a Python list with a numpy array raises TypeError. Fix: <code>order = list(np.argsort(...))</code> before using it as an index into <code>feature_names</code>.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 7 — MOFA+ ═══════════════════════ -->
+<section id="phase7">
+  <div class="section-head">
+    <div class="phase-icon" style="background:var(--c-emerald-bg)">🧬</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-emerald)">Phase 7 · MOFA+ Multi-Omics Factor Analysis</h2>
+      <p>Unsupervised latent factor model jointly decomposing expression, mutations, and CNV</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#ecfdf5;color:var(--c-emerald);border:1px solid #a7f3d0">📄 src/unsupervised/mofa_analysis.py</span>
+        <span class="pill" style="background:#ecfdf5;color:var(--c-emerald);border:1px solid #a7f3d0">📦 mofapy2 0.7.4</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Input Views</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0">
+    <div style="border:2px solid var(--c-emerald);border-radius:8px;padding:14px;background:#ecfdf5">
+      <h4 style="font-size:12px;font-weight:700;color:var(--c-emerald);margin-bottom:6px">Expression</h4>
+      <div style="font-size:12px;color:#475569">Top-500 most-variable genes<br>StandardScaler applied<br><strong>Likelihood: Gaussian</strong><br>Prefix: E_</div>
+    </div>
+    <div style="border:2px solid var(--c-emerald);border-radius:8px;padding:14px;background:#ecfdf5">
+      <h4 style="font-size:12px;font-weight:700;color:var(--c-emerald);margin-bottom:6px">Mutations</h4>
+      <div style="font-size:12px;color:#475569">Top-150 most-frequent genes<br>Binary (0/1), no scaling<br><strong>Likelihood: Bernoulli</strong><br>Prefix: M_</div>
+    </div>
+    <div style="border:2px solid var(--c-emerald);border-radius:8px;padding:14px;background:#ecfdf5">
+      <h4 style="font-size:12px;font-weight:700;color:var(--c-emerald);margin-bottom:6px">CNV</h4>
+      <div style="font-size:12px;color:#475569">Top-500 most-variable genes<br>StandardScaler applied<br><strong>Likelihood: Gaussian</strong><br>Prefix: C_</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="params-table">
+      <thead><tr><th>Parameter</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>n_factors requested</td><td>15</td><td>ARD pruned to 13 active factors</td></tr>
+        <tr><td>ard_factors</td><td>True</td><td>Automatic Relevance Determination on factor activities</td></tr>
+        <tr><td>ard_weights</td><td>True</td><td>ARD on weights (view-specific sparsity)</td></tr>
+        <tr><td>spikeslab_weights</td><td>True</td><td>Spike-and-slab prior encourages exact zeros in weights</td></tr>
+        <tr><td>max iterations</td><td>300</td><td>Ran full 300 iters; medium convergence threshold not reached (~0.00011% Δ/iter)</td></tr>
+        <tr><td>convergence_mode</td><td>medium</td><td>deltaELBO threshold ~5×10⁻⁵</td></tr>
+        <tr><td>seed</td><td>42</td><td></td></tr>
+        <tr><td>training time</td><td>~16 min</td><td>CPU only; ~3 sec/iteration with 1,150 features × 7,902 samples</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Key Factors — Biological Interpretation</div>
+  <div class="factor-grid">
+    <div class="factor-card" style="border-color:var(--c-emerald);background:#ecfdf5">
+      <h4 style="color:var(--c-emerald)">Factor 2 — 15.0% variance<br>Pan-cancer master axis</h4>
+      <ul>
+        <li>KRT8, KRT18 (epithelial keratins)</li>
+        <li>IGHA1, JCHAIN (B-cell/immune)</li>
+        <li>IDH1, KRAS mutations</li>
+        <li>Strong cancer-type separation + survival signal</li>
+      </ul>
+    </div>
+    <div class="factor-card" style="border-color:var(--c-blue);background:#eff6ff">
+      <h4 style="color:var(--c-blue)">Factor 3 — 10.6% variance<br>GI / hepatocyte programme</h4>
+      <ul>
+        <li>SLC39A5, ALDOB (zinc transport, aldolase)</li>
+        <li>CDHR5, HNF4A (intestinal/hepatocyte)</li>
+        <li>TP53, APC, KRAS mutations</li>
+        <li>Separates GI tract cancers</li>
+      </ul>
+    </div>
+    <div class="factor-card" style="border-color:var(--c-purple);background:#faf5ff">
+      <h4 style="color:var(--c-purple)">Factor 5 — 5.9% variance<br>IDH-mutant glioma axis</h4>
+      <ul>
+        <li>SOX8, CTNND2, PPP1R1B (neural markers)</li>
+        <li>TMEM59L, ATP1A2 (neural)</li>
+        <li>IDH1 + ATRX mutations</li>
+        <li>WHO-critical glioma biomarker axis</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub-label">Outputs</div>
+  <div class="outputs-grid">
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>results/mofa_factors.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>results/mofa_variance.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>results/mofa_weights_expression.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>results/mofa_weights_mutations.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>results/mofa_weights_cnv.csv</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>figures/mofa_variance_explained.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>figures/mofa_factor_umap.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>figures/mofa_factor_cancer_type.png</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>figures/mofa_factor_survival*.png (×3)</div>
+    <div class="output-chip"><div class="dot" style="background:var(--c-emerald)"></div>figures/mofa_top_weights_Factor*.png (×5)</div>
+  </div>
+
+  <details>
+    <summary>
+      ⚠️ Gotchas &amp; Fixes (4 issues)
+      <span class="chevron">▼</span>
+    </summary>
+    <div class="details-body">
+      <div class="err-row">
+        <span class="err-label">AssertionError: Duplicated entries in data (long-format DF)</span><span class="fix-label">Switch to matrix API</span>
+        <div class="err-desc">Initial approach built a 35.5M-row long-format DataFrame (sample × view × feature × value). Duplicate gene names (from HGNC symbol mapping) caused the assertion to fail. Fix: switched to <code>set_data_matrix()</code> with <code>data[view][group]</code> numpy arrays — far more efficient and bypasses the deduplication check.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">AssertionError: Length of views_names != number of views</span><span class="fix-label">Correct API: data[view][group] not data[group][view]</span>
+        <div class="err-desc">mofapy2 matrix API nests data as <code>data[view_idx][group_idx]</code>, not <code>data[group_idx][view_idx]</code> as initially assumed. <code>M = len(data)</code> = number of views. Transposing the nesting fixed the shape mismatch.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">AssertionError: Duplicated entries in features_names (across views)</span><span class="fix-label">Prefix feature names per view (E_/M_/C_)</span>
+        <div class="err-desc">mofapy2 requires globally unique feature names across ALL views. The same gene can appear in expression and CNV views — naming collisions cause the assertion. Fix: prefixed all feature names with view abbreviation: <code>E_GENE</code>, <code>M_GENE</code>, <code>C_GENE</code>.</div>
+      </div>
+      <div class="err-row">
+        <span class="err-label">AttributeError: 'ndarray' has no attribute 'values' (extract_results)</span><span class="fix-label">Handle ndarray + dict + list return types</span>
+        <div class="err-desc"><code>model.nodes["Z"].getExpectation()</code> returns a plain ndarray (not a dict) in mofapy2 0.7.4. Extract function now checks <code>isinstance(Z_raw, dict)</code> → <code>isinstance(Z_raw, list)</code> → else uses the array directly. Same pattern for weights.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════ PHASE 8 — REPORT ═══════════════════════ -->
+<section id="phase8">
+  <div class="section-head">
+    <div class="phase-icon" style="background:#f1f5f9">📊</div>
+    <div class="section-head-text">
+      <h2 style="color:var(--c-slate)">Phase 8 · HTML Results Report</h2>
+      <p>Self-contained interactive report consolidating all results, figures, and interpretations</p>
+      <div class="pill-row">
+        <span class="pill" style="background:#f1f5f9;color:var(--c-slate);border:1px solid #cbd5e1">📄 build_report.py</span>
+        <span class="pill" style="background:#f1f5f9;color:var(--c-slate);border:1px solid #cbd5e1">📄 results/cancer_multiomics_report.html</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="params-table">
+      <thead><tr><th>Property</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>File size</td><td>4.7 MB (all figures embedded as base64)</td></tr>
+        <tr><td>Dependencies</td><td>Zero — fully self-contained single HTML file</td></tr>
+        <tr><td>Figures embedded</td><td>35 PNG figures (all phases)</td></tr>
+        <tr><td>Navigation</td><td>Sticky top nav bar with anchor links</td></tr>
+        <tr><td>Sections</td><td>7: Dataset Overview · PCA/UMAP · Clustering · Survival Models · SHAP · MOFA+ · Critical Insights</td></tr>
+        <tr><td>Components</td><td>Stat boxes · Insight cards (color-coded) · Data tables · Collapsible hazard ratio forest plot · KM curve figures</td></tr>
+        <tr><td>Image format</td><td>data:image/png;base64,... inlined per &lt;img&gt;</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sub-label">Report Structure</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0">
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">§1 Dataset</div>
+      7 stat boxes, cancer type table, provenance, survival coverage note
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">§2 PCA/UMAP</div>
+      Scree plot, cancer-type UMAP, survival UMAP, lineage interpretation
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">§3 Clustering</div>
+      K-means vs Leiden comparison, all 6 characterisation figures, k=2 critique
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">§4 Survival</div>
+      Cox + DeepSurv comparison, hazard ratios, both KM curves, feature table
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">§5 SHAP</div>
+      4 beeswarm/bar charts, cross-model comparison, importance table
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">§6 MOFA+</div>
+      Variance stacked bar, factor UMAP, cancer-type violin, 3 KM plots, weight tables
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;font-size:12px;grid-column:span 2">
+      <div style="font-weight:700;margin-bottom:4px">§7 Critical Insights</div>
+      8 colour-coded insight cards: lineage dominance · multi-omics added value · IDH1-Factor5 as actionable signal · C-index context · survival data bottleneck · mutation burden confounders · Leiden taxonomy · recommended next steps
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id], div[id="overview"]');
+  const navLinks = document.querySelectorAll('nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.2, rootMargin: '-10% 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+
+  // Collapsible chevron
+  document.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {
+      const ch = d.querySelector('.chevron');
+      if (ch) ch.style.transform = d.open ? 'rotate(180deg)' : '';
+    });
+  });
+</script>
+</body>
+</html>

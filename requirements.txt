@@ -1,0 +1,35 @@
+# ─── Core data science ───────────────────────────────────────────────────────
+numpy==2.4.4
+pandas==2.3.3
+scipy>=1.13
+
+# ─── Machine learning & survival analysis ────────────────────────────────────
+scikit-learn==1.8.0
+lifelines==0.30.3
+lightgbm==4.6.0
+xgboost==3.2.0
+
+# ─── Deep learning (CPU build; swap torch==2.x+cu121 for GPU) ────────────────
+torch==2.12.0
+
+# ─── Explainability ──────────────────────────────────────────────────────────
+shap==0.51.0
+
+# ─── Multi-omics factor analysis ─────────────────────────────────────────────
+mofapy2==0.7.4
+
+# ─── Dimensionality reduction & clustering ───────────────────────────────────
+umap-learn==0.5.12
+igraph==1.0.0
+leidenalg==0.11.0
+
+# ─── Visualisation ───────────────────────────────────────────────────────────
+matplotlib==3.10.9
+seaborn>=0.13
+
+# ─── Document generation ─────────────────────────────────────────────────────
+python-docx==1.2.0
+
+# ─── Utilities ───────────────────────────────────────────────────────────────
+requests==2.33.1
+tqdm==4.67.3

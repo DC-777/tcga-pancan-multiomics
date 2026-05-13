@@ -1,0 +1,37 @@
+name: tcga-multiomics
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11          # 3.11 recommended; project tested on 3.14
+  - pip
+
+  # Core
+  - numpy=2.4.4
+  - pandas=2.3.3
+  - scipy>=1.13
+
+  # ML / survival
+  - scikit-learn=1.8.0
+  - lightgbm=4.6.0
+  - xgboost=3.2.0
+
+  # Clustering / graph
+  - python-igraph=1.0.0
+  - leidenalg=0.11.0
+
+  # Visualisation
+  - matplotlib=3.10.9
+  - seaborn>=0.13
+
+  # pip-only packages
+  - pip:
+    - lifelines==0.30.3
+    - shap==0.51.0
+    - mofapy2==0.7.4
+    - umap-learn==0.5.12
+    - torch==2.12.0          # CPU; for GPU: torch==2.12.0+cu121
+    - python-docx==1.2.0
+    - requests==2.33.1
+    - tqdm==4.67.3

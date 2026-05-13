@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TCGA Pan-Cancer Multi-Omics Interactive Dashboard</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --ink: #172033;
+      --muted: #68758a;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --line: #d9e1ec;
+      --accent: #246b8f;
+      --accent-2: #3d7b52;
+      --warn: #9a6a0a;
+      --risk: #a14444;
+      --shadow: 0 18px 50px rgba(23, 32, 51, 0.08);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 272px minmax(0, 1fr);
+      overflow-x: hidden;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      background: #172033;
+      color: #f8fafc;
+      padding: 22px 18px;
+      overflow-y: auto;
+      max-width: 100vw;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 24px;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #d9f0f8;
+      color: #172033;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      display: block;
+      color: #aebbd0;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav-group {
+      margin: 22px 0;
+    }
+
+    .nav-title {
+      color: #8fa0ba;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 0 0 8px 4px;
+    }
+
+    .nav-button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: #d9e2f1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 11px;
+      border-radius: 7px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      min-width: 0;
+    }
+
+    .nav-button:hover,
+    .nav-button.active {
+      background: rgba(255,255,255,.11);
+      color: #fff;
+    }
+
+    .nav-button svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+    }
+
+    .sidebar-note {
+      margin-top: 22px;
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px;
+      color: #c6d2e4;
+      font-size: 12px;
+      background: rgba(255,255,255,.05);
+    }
+
+    .main {
+      min-width: 0;
+      max-width: 100vw;
+      padding: 24px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .title p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 850px;
+      overflow-wrap: anywhere;
+    }
+
+    .tools {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .search {
+      position: relative;
+      width: min(320px, 44vw);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 17px;
+      height: 17px;
+      color: var(--muted);
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 7px;
+      padding: 10px 12px 10px 34px;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .search input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(36,107,143,.13);
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 7px;
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .icon-button:hover {
+      border-color: #b7c3d2;
+      background: #f8fafc;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel.pad {
+      padding: 20px;
+    }
+
+    .panel-head {
+      padding: 17px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .panel-head h2,
+    .panel-head h3 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .panel-head p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 14px;
+      min-height: 98px;
+    }
+
+    .stat .num {
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 750;
+      letter-spacing: 0;
+      color: #174e70;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .finding-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .finding {
+      border-left: 4px solid var(--accent);
+      background: #f7fbfd;
+      border-radius: 6px;
+      padding: 12px 13px;
+    }
+
+    .finding strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .finding p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .step {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 7px;
+      padding: 12px;
+    }
+
+    .step span {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      background: #e5f2f7;
+      color: #174e70;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 50%;
+      margin-bottom: 8px;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .step p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 14px 16px 0;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 8px 11px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .tab.active {
+      background: #172033;
+      color: #fff;
+      border-color: #172033;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      padding: 0 16px 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      text-align: left;
+      background: #25354f;
+      color: #fff;
+      padding: 9px 10px;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #edf1f7;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafbfd;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .figure-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .figure-card button {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: zoom-in;
+      width: 100%;
+      display: block;
+    }
+
+    .figure-card img {
+      width: 100%;
+      display: block;
+      background: #fff;
+    }
+
+    .figure-caption {
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .figure-caption strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .figure-caption span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .model-bars {
+      display: grid;
+      gap: 13px;
+      padding: 18px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 78px;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .bar-track {
+      height: 12px;
+      background: #e7edf5;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: calc(var(--value) * 100%);
+      background: #246b8f;
+      border-radius: 999px;
+    }
+
+    .bar-row:nth-child(2) .bar-fill { background: #3d7b52; }
+    .bar-row:nth-child(3) .bar-fill { background: #8d6a2e; }
+    .bar-row:nth-child(4) .bar-fill { background: #7b5b8f; }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+
+    .filters label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .filters select,
+    .filters input {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      padding: 8px 10px;
+      color: var(--ink);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 650;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      white-space: nowrap;
+    }
+
+    .badge.high { color: #246b8f; background: #e8f4f8; border-color: #c6e1ec; }
+    .badge.yes { color: #2d7a58; background: #ebf7ef; border-color: #c8e6d1; }
+    .badge.partial { color: #9a6a0a; background: #fff6df; border-color: #efd89a; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .empty {
+      padding: 26px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    dialog {
+      border: 0;
+      padding: 0;
+      width: min(1180px, 94vw);
+      max-height: 92vh;
+      border-radius: 8px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.35);
+    }
+
+    dialog::backdrop {
+      background: rgba(10,16,28,.72);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .modal-head strong {
+      font-size: 14px;
+    }
+
+    .modal-body {
+      background: #fff;
+      padding: 12px;
+      overflow: auto;
+      max-height: calc(92vh - 48px);
+    }
+
+    .modal-body img {
+      width: 100%;
+      display: block;
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    @media (max-width: 1040px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+      .nav-group {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .nav-title, .sidebar-note {
+        display: none;
+      }
+      .nav-button {
+        width: 100%;
+        border: 1px solid rgba(255,255,255,.12);
+        justify-content: flex-start;
+      }
+      .hero-grid, .detail-grid {
+        grid-template-columns: 1fr;
+      }
+      .workflow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .main { padding: 18px 14px 50px; }
+      .topbar { align-items: stretch; flex-direction: column; }
+      .tools { justify-content: stretch; }
+      .search { width: 100%; }
+      .stat-grid, .chart-grid, .workflow {
+        grid-template-columns: 1fr;
+      }
+      .bar-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .sidebar {
+        padding: 16px 14px;
+      }
+      .nav-group {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .nav-button {
+        font-size: 13px;
+      }
+      .brand {
+        margin-bottom: 16px;
+      }
+      .title h1 {
+        font-size: 27px;
+      }
+      .title p {
+        font-size: 15px;
+        max-width: min(330px, calc(100vw - 40px));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v18"></path><path d="M7 6c3 2 7 2 10 0"></path><path d="M7 18c3-2 7-2 10 0"></path><path d="M6 9h12"></path><path d="M6 15h12"></path>
+          </svg>
+        </div>
+        <div>
+          <strong>Pan-Cancer<br>Research Console</strong>
+          <span>TCGA multi-omics dashboard</span>
+        </div>
+      </div>
+
+      <div class="nav-group" aria-label="Dashboard sections">
+        <div class="nav-title">Navigate</div>
+        <button class="nav-button active" data-section="overview" title="Overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 13h7V4H4z"></path><path d="M13 20h7V4h-7z"></path><path d="M4 20h7v-5H4z"></path></svg>
+          Overview
+        </button>
+        <button class="nav-button" data-section="data" title="Data explorer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"></path></svg>
+          Data
+        </button>
+        <button class="nav-button" data-section="models" title="Models">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19V5"></path><path d="M5 19h14"></path><path d="m8 15 3-4 3 2 4-6"></path></svg>
+          Models
+        </button>
+        <button class="nav-button" data-section="figures" title="Figures">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m7 15 3-3 2 2 4-5 2 3"></path></svg>
+          Figures
+        </button>
+        <button class="nav-button" data-section="markers" title="Markers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.3L4.5 20a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9.3V2"></path><path d="M8 2h8"></path><path d="M7 16h10"></path></svg>
+          Markers
+        </button>
+        <button class="nav-button" data-section="findings" title="Findings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4"></path><path d="M12 17v4"></path><path d="M3 12h4"></path><path d="M17 12h4"></path><path d="m5.6 5.6 2.8 2.8"></path><path d="m15.6 15.6 2.8 2.8"></path><path d="m18.4 5.6-2.8 2.8"></path><path d="m8.4 15.6-2.8 2.8"></path></svg>
+          Findings
+        </button>
+      </div>
+
+      <div class="sidebar-note">
+        This dashboard is self-contained. It uses embedded summary data and relative links to figures in <code>results/figures</code>.
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="title">
+          <h1>TCGA Pan-Cancer<br>Multi-Omics Analysis</h1>
+          <p>Explore the cohort, modeling pipeline, survival models, figures, factor biology, marker candidates, and main project findings.</p>
+        </div>
+        <div class="tools">
+          <label class="search" title="Search dashboard tables">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <input id="globalSearch" type="search" placeholder="Search genes, factors, models">
+          </label>
+          <button class="icon-button" id="resetButton" title="Reset filters" aria-label="Reset filters">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 3v6h6"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <section id="overview" class="section active">
+        <div class="hero-grid">
+          <div class="panel pad">
+            <div class="stat-grid">
+              <div class="stat"><div class="num">7,902</div><div class="label">Aligned primary tumor samples</div></div>
+              <div class="stat"><div class="num">31</div><div class="label">Cancer types represented</div></div>
+              <div class="stat"><div class="num">7,787</div><div class="label">Samples with OS time</div></div>
+              <div class="stat"><div class="num">2,170</div><div class="label">Overall-survival events</div></div>
+              <div class="stat"><div class="num">5,000</div><div class="label">Expression features</div></div>
+              <div class="stat"><div class="num">1,490</div><div class="label">Mutation features</div></div>
+            </div>
+          </div>
+          <div class="panel pad">
+            <h2 style="margin-top:0">Main takeaways</h2>
+            <div class="finding-list" id="overviewFindings"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Project Workflow</h2>
+              <p>From TCGA data acquisition to model interpretation and marker synthesis.</p>
+            </div>
+          </div>
+          <div class="panel pad">
+            <div class="workflow" id="workflow"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="data" class="section">
+        <div class="hero-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Cohort Composition</h2>
+                <p>Top cancer types by sample count in the aligned cohort.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="cancerTable"></table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Data Matrices</h2>
+                <p>Current aligned omics assets consumed by downstream models.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="matrixTable"></table>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Data Contract Notes</h2>
+              <p>Rules a future agent should preserve when working with this project.</p>
+            </div>
+          </div>
+          <div class="panel pad">
+            <div class="workflow" id="contracts"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="models" class="section">
+        <div class="hero-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Survival Model Ranking</h2>
+                <p>Five-fold event-stratified C-index from the final model comparison.</p>
+              </div>
+            </div>
+            <div class="model-bars" id="modelBars"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Model Score Table</h2>
+                <p>Mean and fold-to-fold variability.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="modelTable"></table>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Cross-Model SHAP Leaders</h2>
+                <p>Final models: FT-Transformer, XGBoost, LightGBM.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="modelShapTable"></table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Raw Cox / DeepSurv SHAP</h2>
+                <p>Earlier raw feature branch using expression PCs, mutations, and CNV PCs.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="rawShapTable"></table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="figures" class="section">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Result Figures</h2>
+              <p>Click a figure to inspect it larger. Use category tabs to narrow the gallery.</p>
+            </div>
+          </div>
+          <div class="tabs" id="figureTabs"></div>
+          <div class="panel pad" style="box-shadow:none;border:0">
+            <div class="chart-grid" id="figureGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="markers" class="section">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Therapeutic Target Explorer</h2>
+              <p>Filter the ranked marker table by modality and actionability.</p>
+            </div>
+          </div>
+          <div class="filters">
+            <label for="modalityFilter">Modality</label>
+            <select id="modalityFilter">
+              <option value="all">All</option>
+              <option value="expression">Expression</option>
+              <option value="mutation">Mutation</option>
+              <option value="cnv">CNV</option>
+            </select>
+            <label for="actionFilter">Actionability</label>
+            <select id="actionFilter">
+              <option value="all">All</option>
+              <option value="Yes">Yes</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table id="targetTable"></table>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <div>
+              <h2>Factor-to-Gene Contributions</h2>
+              <p>Example top rows from the factor-gene decoding table.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="factorGeneTable"></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="findings" class="section">
+        <div class="hero-grid">
+          <div class="panel pad">
+            <h2 style="margin-top:0">Major Findings</h2>
+            <div class="finding-list" id="findingCards"></div>
+          </div>
+          <div class="panel pad">
+            <h2 style="margin-top:0">Cautions For Interpretation</h2>
+            <div class="finding-list" id="cautionCards"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Important Project Artifacts</h2>
+              <p>Files a future user or AI agent should open first.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="artifactTable"></table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="figureDialog">
+    <div class="modal-head">
+      <strong id="modalTitle">Figure</strong>
+      <button class="icon-button" id="closeDialog" title="Close figure" aria-label="Close figure">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <img id="modalImage" alt="">
+    </div>
+  </dialog>
+
+  <script>
+    const data = {
+      findings: [
+        ["Factor-based survival modeling is strongest", "FT-Transformer reached mean C-index 0.7512; XGBoost and LightGBM were close behind."],
+        ["Age and cancer type matter", "Age at diagnosis is the top cross-model SHAP feature, with cancer-type indicators also ranking highly."],
+        ["MOFA factors carry prognostic signal", "Factor8, Factor6, Factor1, Factor15, and Factor12 are important survival-linked latent factors."],
+        ["Markers are hypothesis-generating", "TP53 leads the current target table, with immune, epithelial, and signaling candidates requiring validation."]
+      ],
+      cautions: [
+        ["Stale prose exists", "Trust current CSV outputs over older generated report language when counts disagree."],
+        ["Cancer-type confounding", "Pan-cancer survival models can learn lineage prognosis, not only biology causal for survival."],
+        ["MOFA fallback check", "Verify whether mofa_analysis.py used mofapy2 or the NMF fallback before claiming true MOFA+."],
+        ["Therapeutic actionability is preliminary", "Marker tables nominate hypotheses; external databases and validation cohorts are needed."]
+      ],
+      workflow: [
+        ["Download", "UCSC Xena / TCGA open-access assets."],
+        ["Convert", "TSV/GZ resources to local CSV files."],
+        ["Align", "Primary tumors across expression, mutation, CNV, clinical."],
+        ["Reduce", "PCA, UMAP, K-means, Leiden."],
+        ["Factorize", "MOFA-style multi-view latent factors."],
+        ["Predict", "Cox, DeepSurv, FT-Transformer, XGBoost, LightGBM."],
+        ["Interpret", "SHAP, factor weights, gene contributions."],
+        ["Report", "HTML, manuscript, target tables, figures."]
+      ],
+      contracts: [
+        ["Barcode", "Use 15-character TCGA sample IDs such as TCGA-19-1787-01."],
+        ["Primary tumors", "Final cohort is filtered to barcodes ending in -01."],
+        ["Alignment", "All aligned matrices must share row index and order."],
+        ["Survival", "Use OS_time > 0 and OS_event in {0, 1} for survival models."]
+      ],
+      cancers: [
+        ["breast invasive carcinoma", 779, "9.9%"],
+        ["lung adenocarcinoma", 503, "6.4%"],
+        ["brain lower grade glioma", 501, "6.3%"],
+        ["head & neck squamous cell carcinoma", 491, "6.2%"],
+        ["prostate adenocarcinoma", 484, "6.1%"],
+        ["thyroid carcinoma", 480, "6.1%"],
+        ["lung squamous cell carcinoma", 471, "6.0%"],
+        ["stomach adenocarcinoma", 407, "5.2%"],
+        ["bladder urothelial carcinoma", 401, "5.1%"],
+        ["kidney clear cell carcinoma", 361, "4.6%"],
+        ["liver hepatocellular carcinoma", 349, "4.4%"],
+        ["kidney papillary cell carcinoma", 278, "3.5%"],
+        ["cervical & endocervical cancer", 276, "3.5%"],
+        ["colon adenocarcinoma", 269, "3.4%"],
+        ["sarcoma", 231, "2.9%"]
+      ],
+      matrices: [
+        ["Expression", "7,902", "5,000", "TOIL RSEM gene TPM, top-variance filtered"],
+        ["Mutations", "7,902", "1,490", "MC3 nonsynonymous binary gene matrix"],
+        ["Copy number", "7,902", "24,776", "GISTIC2 thresholded gene-level values"],
+        ["Clinical", "7,902", "5", "Cancer type, OS time/event, age, CDR label"]
+      ],
+      models: [
+        ["FT-Transformer", 0.7512, 0.0063, "Best mean C-index"],
+        ["XGBoost", 0.7465, 0.0082, "Tree survival model"],
+        ["LightGBM", 0.7451, 0.0075, "Custom Cox objective"],
+        ["XGBoost raw PCA baseline", 0.7237, 0.0532, "Weaker, less stable baseline"]
+      ],
+      modelShap: [
+        ["age_at_dx", 0.3966, 0.4644],
+        ["MOFA_Factor8", 0.2831, 0.2925],
+        ["MOFA_Factor6", 0.2194, 0.2371],
+        ["CT_prostate adenocarcinoma", 0.1670, 0.2197],
+        ["MOFA_Factor1", 0.1624, 0.2455],
+        ["CT_breast invasive carcinoma", 0.1595, 0.2252],
+        ["MOFA_Factor15", 0.1197, 0.1364],
+        ["MOFA_Factor12", 0.1196, 0.1313],
+        ["MOFA_Factor9", 0.0877, 0.0937],
+        ["MOFA_Factor13", 0.0852, 0.1181],
+        ["CT_thyroid carcinoma", 0.0839, 0.1237],
+        ["MOFA_Factor14", 0.0823, 0.0966]
+      ],
+      rawShap: [
+        ["EXPR_PC14", 0.1630, 0.0968, 0.1299],
+        ["EXPR_PC9", 0.1172, 0.1332, 0.1252],
+        ["EXPR_PC4", 0.1314, 0.0688, 0.1001],
+        ["CNV_PC15", 0.1038, 0.0883, 0.0961],
+        ["EXPR_PC50", 0.0846, 0.0709, 0.0778],
+        ["EXPR_PC42", 0.0946, 0.0560, 0.0753],
+        ["MUT_USH2A", 0.0620, 0.0675, 0.0648],
+        ["EXPR_PC37", 0.0680, 0.0584, 0.0632],
+        ["EXPR_PC46", 0.0735, 0.0497, 0.0616],
+        ["MUT_CSMD1", 0.0626, 0.0565, 0.0596],
+        ["MUT_LAMA1", 0.0596, 0.0573, 0.0584],
+        ["EXPR_PC33", 0.0564, 0.0589, 0.0577]
+      ],
+      targets: [
+        ["TP53", "expression", 0.1196, 5, "TSG/gain-of-function", "DNA damage response", "Yes"],
+        ["TTN", "expression", 0.0716, 4, "Unknown", "Unknown", "Partial"],
+        ["RLN1", "expression", 0.0643, 1, "Unknown", "Unknown", "Partial"],
+        ["RLN2", "expression", 0.0643, 1, "Unknown", "Unknown", "Partial"],
+        ["INSL4", "expression", 0.0642, 1, "Unknown", "Unknown", "Partial"],
+        ["PDCD1LG2", "expression", 0.0641, 1, "Unknown", "Unknown", "Partial"],
+        ["CD274", "expression", 0.0641, 1, "Unknown", "Unknown", "Partial"],
+        ["RCL1", "expression", 0.0640, 1, "Unknown", "Unknown", "Partial"],
+        ["PLGRKT", "expression", 0.0640, 1, "Unknown", "Unknown", "Partial"],
+        ["JAK2", "expression", 0.0639, 1, "Unknown", "Unknown", "Partial"],
+        ["KIAA1432", "expression", 0.0639, 1, "Unknown", "Unknown", "Partial"],
+        ["KRT16", "expression", 0.0639, 2, "Unknown", "Epithelial differentiation", "Partial"],
+        ["KRT5", "expression", 0.0628, 2, "Unknown", "Epithelial differentiation", "Partial"],
+        ["MMP1", "expression", 0.0568, 2, "Unknown", "ECM remodeling", "Partial"],
+        ["SERPINB5", "expression", 0.0524, 2, "Unknown", "Maspin TSG", "Partial"],
+        ["KLK3", "expression", 0.0503, 2, "Oncogene", "Prostate (PSA)", "Yes"],
+        ["KRAS", "mutation", 0.0328, 2, "Oncogene", "RAS-MAPK", "Yes"],
+        ["BRAF", "mutation", 0.0256, 1, "Oncogene", "RAS-MAPK", "Yes"]
+      ],
+      factorGenes: [
+        ["PRSS3", "Factor8", "expression", "up", 0.1913, 0.0542],
+        ["FERMT1", "Factor8", "expression", "up", 0.1745, 0.0494],
+        ["VSNL1", "Factor8", "expression", "up", 0.1716, 0.0486],
+        ["PTPRH", "Factor8", "expression", "up", 0.1642, 0.0465],
+        ["ATP10B", "Factor8", "expression", "up", 0.1642, 0.0465],
+        ["PI3", "Factor8", "expression", "up", 0.1591, 0.0450],
+        ["KLK6", "Factor8", "expression", "up", 0.1558, 0.0441],
+        ["HPN", "Factor8", "expression", "down", 0.1546, 0.0438],
+        ["IL1A", "Factor8", "expression", "up", 0.1492, 0.0422],
+        ["SPRR1B", "Factor8", "expression", "up", 0.1456, 0.0412],
+        ["SERPINB5", "Factor8", "expression", "up", 0.1455, 0.0412],
+        ["CYP4F3", "Factor8", "expression", "up", 0.1443, 0.0408]
+      ],
+      artifacts: [
+        ["PROJECT_KNOWLEDGE_MAP.md", "Agent onboarding map and training guide"],
+        ["results/methodology_results_findings_2026.html", "Full methodology/results/findings report"],
+        ["results/model_cv_scores.csv", "Final model C-index table"],
+        ["results/shap_importance_summary_models.csv", "Cross-model SHAP summary"],
+        ["results/therapeutic_targets.csv", "Ranked therapeutic target hypotheses"],
+        ["results/factor_gene_table.csv", "MOFA factor-to-gene decoding"],
+        ["src/preprocess.py", "Aligned multi-omics data construction"],
+        ["src/supervised/model_comparison.py", "Final survival model comparison"],
+        ["src/analysis/marker_analysis.py", "Marker and target synthesis"]
+      ],
+      figures: [
+        ["overview", "UMAP by cancer type", "figures/umap_cancer_type.png", "Expression-derived UMAP colored by cancer type."],
+        ["overview", "UMAP by survival", "figures/umap_survival.png", "Survival annotations projected onto UMAP."],
+        ["clusters", "K-means selection", "figures/kmeans_selection.png", "K-means silhouette and inertia scan."],
+        ["clusters", "Leiden clusters", "figures/umap_leiden.png", "Leiden communities in UMAP space."],
+        ["clusters", "Leiden cancer composition", "figures/cluster_cancer_type_leiden.png", "Cancer-type composition per Leiden cluster."],
+        ["models", "Model comparison", "figures/model_comparison_cindex.png", "Five-fold C-index by survival model."],
+        ["models", "Best model KM", "figures/risk_km_best_model.png", "Kaplan-Meier split for best model risk groups."],
+        ["models", "SHAP three-model comparison", "figures/shap_three_model_comparison.png", "SHAP comparison across FT-Transformer, XGBoost, and LightGBM."],
+        ["mofa", "MOFA variance", "figures/mofa_variance_explained.png", "Variance explained by latent factors."],
+        ["mofa", "MOFA factor UMAP", "figures/mofa_factor_umap.png", "MOFA factor scores on UMAP."],
+        ["markers", "Factor importance", "figures/marker_factor_importance.png", "Factor SHAP versus variance explained."],
+        ["markers", "Top marker genes", "figures/marker_top40_genes.png", "Top gene-level SHAP-weighted markers."],
+        ["markers", "Actionable targets", "figures/marker_actionable_targets.png", "Actionability-oriented target summary."],
+        ["markers", "Pathway bubble", "figures/marker_pathway_bubble.png", "Pathway-level marker summary."]
+      ]
+    };
+
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const fmt = value => typeof value === "number" ? value.toFixed(value < 1 ? 4 : 0) : value;
+
+    function renderRows(items, containerId) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = items.map(([title, text], i) => `
+        <div class="finding">
+          <strong>${title}</strong>
+          <p>${text}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderSteps(items, containerId) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = items.map(([title, text], i) => `
+        <div class="step">
+          <span>${i + 1}</span>
+          <strong>${title}</strong>
+          <p>${text}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderTable(id, headers, rows, options = {}) {
+      const table = document.getElementById(id);
+      const query = (options.query || "").toLowerCase().trim();
+      const filtered = query
+        ? rows.filter(row => row.join(" ").toLowerCase().includes(query))
+        : rows;
+      if (!filtered.length) {
+        table.innerHTML = `<tbody><tr><td><div class="empty">No matching rows.</div></td></tr></tbody>`;
+        return;
+      }
+      const head = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>`;
+      const body = filtered.map(row => `<tr>${row.map((cell, index) => {
+        if (options.badgeColumn === index) {
+          const cls = String(cell).toLowerCase() === "yes" ? "yes" : "partial";
+          return `<td><span class="badge ${cls}">${cell}</span></td>`;
+        }
+        if (options.highColumn === index) {
+          return `<td><span class="badge high">${cell}</span></td>`;
+        }
+        return `<td>${fmt(cell)}</td>`;
+      }).join("")}</tr>`).join("");
+      table.innerHTML = `${head}<tbody>${body}</tbody>`;
+    }
+
+    function renderModels() {
+      const rows = data.models.map(([name, mean, sd, note]) => [name, mean.toFixed(4), sd.toFixed(4), note]);
+      renderTable("modelTable", ["Model", "Mean C-index", "SD", "Note"], rows);
+      const max = Math.max(...data.models.map(m => m[1]));
+      $("#modelBars").innerHTML = data.models.map(([name, mean, sd]) => `
+        <div class="bar-row">
+          <strong>${name}</strong>
+          <div class="bar-track"><div class="bar-fill" style="--value:${mean / max}"></div></div>
+          <span>${mean.toFixed(4)}</span>
+        </div>
+      `).join("");
+    }
+
+    let figureCategory = "all";
+    function renderFigureTabs() {
+      const cats = ["all", ...new Set(data.figures.map(f => f[0]))];
+      $("#figureTabs").innerHTML = cats.map(cat => `
+        <button class="tab ${cat === figureCategory ? "active" : ""}" data-figcat="${cat}">${cat[0].toUpperCase() + cat.slice(1)}</button>
+      `).join("");
+      $$("[data-figcat]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          figureCategory = btn.dataset.figcat;
+          renderFigures();
+          renderFigureTabs();
+        });
+      });
+    }
+
+    function renderFigures() {
+      const query = $("#globalSearch").value.toLowerCase().trim();
+      const figures = data.figures.filter(f => {
+        const catOk = figureCategory === "all" || f[0] === figureCategory;
+        const queryOk = !query || f.join(" ").toLowerCase().includes(query);
+        return catOk && queryOk;
+      });
+      $("#figureGrid").innerHTML = figures.length ? figures.map(([cat, title, src, caption]) => `
+        <article class="figure-card">
+          <button data-image="${src}" data-title="${title}" title="Open ${title}">
+            <img src="${src}" alt="${caption}" loading="lazy">
+          </button>
+          <div class="figure-caption">
+            <strong>${title}</strong>
+            <span>${caption}</span>
+          </div>
+        </article>
+      `).join("") : `<div class="empty">No matching figures.</div>`;
+      $$("[data-image]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          $("#modalTitle").textContent = btn.dataset.title;
+          $("#modalImage").src = btn.dataset.image;
+          $("#modalImage").alt = btn.dataset.title;
+          $("#figureDialog").showModal();
+        });
+      });
+    }
+
+    function renderTargets() {
+      const q = $("#globalSearch").value.toLowerCase().trim();
+      const modality = $("#modalityFilter").value;
+      const action = $("#actionFilter").value;
+      const rows = data.targets
+        .filter(row => modality === "all" || row[1] === modality)
+        .filter(row => action === "all" || row[6] === action)
+        .filter(row => !q || row.join(" ").toLowerCase().includes(q))
+        .map(row => [row[0], row[1], row[2].toFixed(4), row[3], row[4], row[5], row[6]]);
+      renderTable("targetTable", ["Gene", "Modality", "Contribution", "Factors", "Role", "Pathway", "Actionable"], rows, { badgeColumn: 6 });
+    }
+
+    function renderAllTables() {
+      const q = $("#globalSearch").value;
+      renderTable("cancerTable", ["Cancer type", "Samples", "Cohort %"], data.cancers, { query: q });
+      renderTable("matrixTable", ["Modality", "Samples", "Features", "Processing"], data.matrices, { query: q });
+      renderTable("modelShapTable", ["Feature", "Mean |SHAP|", "Max |SHAP|"], data.modelShap.map(r => [r[0], r[1].toFixed(4), r[2].toFixed(4)]), { query: q, highColumn: 0 });
+      renderTable("rawShapTable", ["Feature", "Cox |SHAP|", "DeepSurv |SHAP|", "Average"], data.rawShap.map(r => [r[0], r[1].toFixed(4), r[2].toFixed(4), r[3].toFixed(4)]), { query: q, highColumn: 0 });
+      renderTable("factorGeneTable", ["Gene", "Factor", "Modality", "Direction", "|Weight|", "Contribution"], data.factorGenes.map(r => [r[0], r[1], r[2], r[3], r[4].toFixed(4), r[5].toFixed(4)]), { query: q });
+      renderTable("artifactTable", ["Artifact", "Purpose"], data.artifacts, { query: q });
+      renderTargets();
+      renderFigures();
+    }
+
+    function setSection(id) {
+      $$(".section").forEach(section => section.classList.toggle("active", section.id === id));
+      $$(".nav-button").forEach(btn => btn.classList.toggle("active", btn.dataset.section === id));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function init() {
+      renderRows(data.findings, "overviewFindings");
+      renderRows(data.findings, "findingCards");
+      renderRows(data.cautions, "cautionCards");
+      renderSteps(data.workflow, "workflow");
+      renderSteps(data.contracts, "contracts");
+      renderModels();
+      renderFigureTabs();
+      renderAllTables();
+
+      $$(".nav-button").forEach(btn => btn.addEventListener("click", () => setSection(btn.dataset.section)));
+      $("#globalSearch").addEventListener("input", renderAllTables);
+      $("#modalityFilter").addEventListener("change", renderTargets);
+      $("#actionFilter").addEventListener("change", renderTargets);
+      $("#resetButton").addEventListener("click", () => {
+        $("#globalSearch").value = "";
+        $("#modalityFilter").value = "all";
+        $("#actionFilter").value = "all";
+        figureCategory = "all";
+        renderFigureTabs();
+        renderAllTables();
+      });
+      $("#closeDialog").addEventListener("click", () => $("#figureDialog").close());
+      $("#figureDialog").addEventListener("click", event => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+        if (!inside) event.currentTarget.close();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

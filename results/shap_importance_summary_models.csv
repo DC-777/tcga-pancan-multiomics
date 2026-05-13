@@ -1,0 +1,151 @@
+model,feature,mean_abs_shap
+ftt,MOFA_Factor1,0.24546010775617863
+ftt,MOFA_Factor2,0.014340726039123359
+ftt,MOFA_Factor3,0.04254202220664839
+ftt,MOFA_Factor4,0.0219280109999848
+ftt,MOFA_Factor5,0.05172958846453426
+ftt,MOFA_Factor6,0.23707477329955218
+ftt,MOFA_Factor7,0.04505442456302106
+ftt,MOFA_Factor8,0.2814310762211053
+ftt,MOFA_Factor9,0.07837188181067312
+ftt,MOFA_Factor10,0.07467506018195753
+ftt,MOFA_Factor11,0.048437447279092466
+ftt,MOFA_Factor12,0.10699698764374478
+ftt,MOFA_Factor13,0.04227345287748742
+ftt,MOFA_Factor14,0.05523361315853114
+ftt,MOFA_Factor15,0.13635287949020683
+ftt,MOFA_Factor16,0.03522109925056792
+ftt,MOFA_Factor17,0.07671514285535938
+ftt,MOFA_Factor18,0.07038593112323789
+ftt,CT_adrenocortical cancer,0.002569646221883596
+ftt,CT_bladder urothelial carcinoma,0.018860665000454215
+ftt,CT_brain lower grade glioma,0.00806199898543281
+ftt,CT_breast invasive carcinoma,0.11984319626126401
+ftt,CT_cervical & endocervical cancer,0.011737347407204222
+ftt,CT_cholangiocarcinoma,0.006898159013586119
+ftt,CT_colon adenocarcinoma,0.012629107699597353
+ftt,CT_diffuse large B-cell lymphoma,0.0002477945229401551
+ftt,CT_esophageal carcinoma,0.018286781281680993
+ftt,CT_glioblastoma multiforme,0.08744350116897327
+ftt,CT_head & neck squamous cell carcinoma,0.03333788862839864
+ftt,CT_kidney chromophobe,0.01150201919113569
+ftt,CT_kidney clear cell carcinoma,0.005336651868860159
+ftt,CT_kidney papillary cell carcinoma,0.021455212196656803
+ftt,CT_liver hepatocellular carcinoma,0.014137749278317253
+ftt,CT_lung adenocarcinoma,0.041970680634780905
+ftt,CT_lung squamous cell carcinoma,0.03087448567681826
+ftt,CT_mesothelioma,0.014090184143426027
+ftt,CT_ovarian serous cystadenocarcinoma,0.0006775359781051476
+ftt,CT_pancreatic adenocarcinoma,0.02375644428331593
+ftt,CT_pheochromocytoma & paraganglioma,0.03101051140481139
+ftt,CT_prostate adenocarcinoma,0.12991741747410834
+ftt,CT_rectum adenocarcinoma,0.00476708800257985
+ftt,CT_sarcoma,0.016217448114208905
+ftt,CT_stomach adenocarcinoma,0.04576525645864829
+ftt,CT_testicular germ cell tumor,0.02329566515801449
+ftt,CT_thymoma,0.03230711530405082
+ftt,CT_thyroid carcinoma,0.06952821543017228
+ftt,CT_uterine carcinosarcoma,0.0072375356875207806
+ftt,CT_uterine corpus endometrioid carcinoma,0.015800500371566252
+ftt,CT_uveal melanoma,0.003773890103424293
+ftt,age_at_dx,0.34585730330708997
+xgb,MOFA_Factor1,0.11194451153278351
+xgb,MOFA_Factor2,0.06516862660646439
+xgb,MOFA_Factor3,0.060302674770355225
+xgb,MOFA_Factor4,0.08897022902965546
+xgb,MOFA_Factor5,0.08165078610181808
+xgb,MOFA_Factor6,0.1990612894296646
+xgb,MOFA_Factor7,0.06265145540237427
+xgb,MOFA_Factor8,0.27546197175979614
+xgb,MOFA_Factor9,0.09374271333217621
+xgb,MOFA_Factor10,0.07884936779737473
+xgb,MOFA_Factor11,0.09383053332567215
+xgb,MOFA_Factor12,0.12039763480424881
+xgb,MOFA_Factor13,0.09523972123861313
+xgb,MOFA_Factor14,0.09663298726081848
+xgb,MOFA_Factor15,0.10480388253927231
+xgb,MOFA_Factor16,0.07882323861122131
+xgb,MOFA_Factor17,0.07105810195207596
+xgb,MOFA_Factor18,0.06638380885124207
+xgb,CT_adrenocortical cancer,0.0009772747289389372
+xgb,CT_bladder urothelial carcinoma,0.02567785419523716
+xgb,CT_brain lower grade glioma,0.0032848473638296127
+xgb,CT_breast invasive carcinoma,0.13364741206169128
+xgb,CT_cervical & endocervical cancer,0.009901017881929874
+xgb,CT_cholangiocarcinoma,0.0006585854571312666
+xgb,CT_colon adenocarcinoma,0.002400740748271346
+xgb,CT_diffuse large B-cell lymphoma,0.0002469548780936748
+xgb,CT_esophageal carcinoma,0.022609984502196312
+xgb,CT_glioblastoma multiforme,0.05037786439061165
+xgb,CT_head & neck squamous cell carcinoma,0.0023871948942542076
+xgb,CT_kidney chromophobe,0.006466621533036232
+xgb,CT_kidney clear cell carcinoma,0.002559154760092497
+xgb,CT_kidney papillary cell carcinoma,0.0010962402448058128
+xgb,CT_liver hepatocellular carcinoma,0.0016567971324548125
+xgb,CT_lung adenocarcinoma,0.02051326259970665
+xgb,CT_lung squamous cell carcinoma,0.006742413155734539
+xgb,CT_mesothelioma,0.036714501678943634
+xgb,CT_ovarian serous cystadenocarcinoma,0.00034631192102096975
+xgb,CT_pancreatic adenocarcinoma,0.01515780296176672
+xgb,CT_pheochromocytoma & paraganglioma,0.042767930775880814
+xgb,CT_prostate adenocarcinoma,0.15123485028743744
+xgb,CT_rectum adenocarcinoma,0.0052682883106172085
+xgb,CT_sarcoma,0.0042013609781861305
+xgb,CT_stomach adenocarcinoma,0.048697590827941895
+xgb,CT_testicular germ cell tumor,0.05351302772760391
+xgb,CT_thymoma,0.03161054477095604
+xgb,CT_thyroid carcinoma,0.058362096548080444
+xgb,CT_uterine carcinosarcoma,0.006228253245353699
+xgb,CT_uterine corpus endometrioid carcinoma,0.022295072674751282
+xgb,CT_uveal melanoma,0.0027309174183756113
+xgb,age_at_dx,0.3794057369232178
+lgb,MOFA_Factor1,0.1297471223930015
+lgb,MOFA_Factor2,0.06967559427715951
+lgb,MOFA_Factor3,0.06770577188866002
+lgb,MOFA_Factor4,0.09262386391680755
+lgb,MOFA_Factor5,0.0803633401738439
+lgb,MOFA_Factor6,0.22197664018520963
+lgb,MOFA_Factor7,0.07881358457072254
+lgb,MOFA_Factor8,0.29253001327253264
+lgb,MOFA_Factor9,0.09098581403689611
+lgb,MOFA_Factor10,0.07702240347706098
+lgb,MOFA_Factor11,0.09108045212565455
+lgb,MOFA_Factor12,0.13126485406695895
+lgb,MOFA_Factor13,0.1181241613675755
+lgb,MOFA_Factor14,0.09496120737117697
+lgb,MOFA_Factor15,0.11807652782858093
+lgb,MOFA_Factor16,0.07765237119004807
+lgb,MOFA_Factor17,0.08084516312942017
+lgb,MOFA_Factor18,0.07910230907712514
+lgb,CT_adrenocortical cancer,5.2939510422298004e-05
+lgb,CT_bladder urothelial carcinoma,0.013672660774538251
+lgb,CT_brain lower grade glioma,0.0015852139880411377
+lgb,CT_breast invasive carcinoma,0.22515565487550665
+lgb,CT_cervical & endocervical cancer,0.010504822122406703
+lgb,CT_cholangiocarcinoma,0.0009693869789635371
+lgb,CT_colon adenocarcinoma,0.0030740612860025887
+lgb,CT_diffuse large B-cell lymphoma,0.0
+lgb,CT_esophageal carcinoma,0.023401292415681157
+lgb,CT_glioblastoma multiforme,0.06019029513654363
+lgb,CT_head & neck squamous cell carcinoma,0.0014510004124594507
+lgb,CT_kidney chromophobe,0.005039358194835643
+lgb,CT_kidney clear cell carcinoma,0.0010041329468671442
+lgb,CT_kidney papillary cell carcinoma,0.001861913991416847
+lgb,CT_liver hepatocellular carcinoma,0.002075231460592156
+lgb,CT_lung adenocarcinoma,0.009610821961586864
+lgb,CT_lung squamous cell carcinoma,0.008722431355756033
+lgb,CT_mesothelioma,0.03323239054704816
+lgb,CT_ovarian serous cystadenocarcinoma,0.0
+lgb,CT_pancreatic adenocarcinoma,0.015071703747693318
+lgb,CT_pheochromocytoma & paraganglioma,0.05246618152646221
+lgb,CT_prostate adenocarcinoma,0.21972401468179392
+lgb,CT_rectum adenocarcinoma,0.011352712543121493
+lgb,CT_sarcoma,0.0022100882079512697
+lgb,CT_stomach adenocarcinoma,0.04657637238092303
+lgb,CT_testicular germ cell tumor,0.07392683624851452
+lgb,CT_thymoma,0.046320542747670175
+lgb,CT_thyroid carcinoma,0.12369916383023884
+lgb,CT_uterine carcinosarcoma,0.004948400240951793
+lgb,CT_uterine corpus endometrioid carcinoma,0.029086461175839084
+lgb,CT_uveal melanoma,0.0010404475505342912
+lgb,age_at_dx,0.46440500034024

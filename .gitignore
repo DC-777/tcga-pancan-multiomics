@@ -1,0 +1,72 @@
+# ─── Raw & processed data (too large for git) ────────────────────────────────
+data/
+!data/.gitkeep
+results/aligned_expression.csv
+results/aligned_cnv.csv
+
+# Keep aligned_mutations (22 MB) and aligned_clinical but not the big ones
+# Use Git LFS if you need to track large CSVs: git lfs track "*.csv"
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.conda/
+conda-meta/
+
+# ─── Jupyter ─────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── IDE / Editor ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# ─── Word temp files ─────────────────────────────────────────────────────────
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# ─── Claude Code internal ────────────────────────────────────────────────────
+.claude/
+
+# ─── Malformed flat dirs (artifacts from prior runs) ─────────────────────────
+resultsfigures/
+resultsmodels/
+srcinterpret/
+srcsupervised/
+srcunsupervised/
+src__init__.py
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Logs & temp ─────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
