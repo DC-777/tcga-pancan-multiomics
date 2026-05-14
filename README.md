@@ -163,11 +163,27 @@ python -m src.analysis.marker_analysis
 python -m src.analysis.build_manuscript
 ```
 
-### 5. View results
+### 5. Run the causal inference layer (diff-diff)
+
+```bash
+python -m src.analysis.did_causal_layer
+```
+
+This runs five sequential analyses using the `diff-diff` library (v3.3):
+- **CallawaySantAnna** staggered event study (per top-5 MOFA factor)
+- **BaconDecomposition** to diagnose TWFE bias
+- **TripleDifference** synthetic lethality for 4 gene × factor pairs
+- **HonestDiD** Rambachan-Roth sensitivity bounds for Factor8
+- **TROP** nuclear-norm factor-adjusted robustness check
+
+Outputs: `results/did_att_estimates.csv`, `results/did_ddd_synergy.csv`,
+`results/did_sensitivity.csv`, `results/did_summary.txt`, and 8 new figures.
+
+### 6. View results
 
 | Output | How to open |
 |--------|-------------|
-| `results/dashboard.html` | Open in any browser — fully self-contained |
+| `results/dashboard.html` | Open in any browser — 7 panels including Causal DiD |
 | `results/manuscript.docx` | Microsoft Word / LibreOffice |
 | `results/supplementary.docx` | Microsoft Word / LibreOffice |
 | `results/figures/` | PNG files, directly usable in publications |

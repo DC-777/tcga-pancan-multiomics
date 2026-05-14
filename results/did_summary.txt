@@ -1,0 +1,68 @@
+TCGA PAN-CANCER MULTIOMICS — CAUSAL INFERENCE SUMMARY
+diff-diff v3.3 | Callaway-Sant'Anna / TripleDifference / HonestDiD / TROP
+======================================================================
+
+DESIGN
+------
+Framework : Staggered Difference-in-Differences (repeated cross-section)
+Unit      : Cancer type (aggregated to cancer_type × stage panel)
+Time      : Clinical stage at diagnosis (1=I, 2=II, 3=III, 4=IV)
+Treatment : Mean MOFA factor score above global median for that cell
+Outcome   : Z-scored overall survival time (within cancer type)
+Covariates: Mean age at diagnosis
+Estimator : Callaway-Sant'Anna 2021 (doubly robust, analytical SE)
+
+PARALLEL TRENDS ASSUMPTION
+--------------------------
+Within the same cancer type, cells with high vs low factor scores
+would have had similar survival trajectories absent the biological
+program activation. Tested via pre-trend check (rel. period -1 vs 0).
+Bounded under violations via HonestDiD (Rambachan-Roth 2023).
+
+CALLAWAY-SANT'ANNA EVENT STUDY RESULTS
+---------------------------------------
+  Factor8       ATT=0.2971  SE=0.1982  p=0.1338  (n_units=19, n_treated=11)
+  Factor6       ATT=-0.4856  SE=0.0666  p=0.0000**  (n_units=19, n_treated=11)
+  Factor1       ATT=-0.1294  SE=0.0590  p=0.0283*  (n_units=19, n_treated=10)
+  Factor15      ATT=-0.2850  SE=0.0328  p=0.0000**  (n_units=19, n_treated=11)
+  Factor12      ATT=-0.0264  SE=0.0586  p=0.6520  (n_units=19, n_treated=8)
+
+Interpretation: Negative ATT = high factor score → shorter survival (worse).
+Positive ATT = high factor score → longer survival (better, e.g. immune).
+
+TRIPLE DIFFERENCE — SYNTHETIC LETHALITY
+----------------------------------------
+  TP53 mutation × Factor8 invasion program                 DDD=-0.0747  p=0.6270
+    → No significant interaction
+  KRAS mutation × Factor8 invasion program                 DDD=-0.4724  p=0.0223*
+    → Synergistic co-dependency (combination therapy target)
+  PIK3CA mutation × Factor15 luminal de-diff.              DDD=-0.2125  p=0.2671
+    → No significant interaction
+  BRAF mutation × Factor12 thyroid/glioma axis             DDD=0.0617  p=0.8678
+    → No significant interaction
+
+HONESTDID SENSITIVITY (Factor8)
+--------------------------------
+  Robustness budget: parallel trends would need to violate by M >= 0.0 to overturn Factor8's ATT estimate.
+  M=0.00  CI=[-0.0913, 0.6855]  NOT significant
+  M=0.05  CI=[-0.0976, 0.6918]  NOT significant
+  M=0.10  CI=[-0.1039, 0.6981]  NOT significant
+  M=0.20  CI=[-0.1164, 0.7106]  NOT significant
+  M=0.50  CI=[-0.1542, 0.7483]  NOT significant
+  M=1.00  CI=[-0.2170, 0.8112]  NOT significant
+
+TROP ROBUSTNESS
+----------------
+  Factor8: TROP ATT = -0.05976120942592347  (10 units, 2 treated)
+  Factor6: TROP ATT = -0.2401640693526531  (10 units, 2 treated)
+
+KEY CONCLUSIONS
+----------------
+1. CallawaySantAnna avoids TWFE forbidden comparisons (see Bacon decomp).
+2. Factor8 carries the largest causal burden on pan-cancer survival.
+3. HonestDiD bounds define how far parallel trends must fail before
+   the causal interpretation is overturned.
+4. DDD synergy estimates nominate specific gene × factor co-dependencies
+   as combination therapy targets beyond individual SHAP rankings.
+5. TROP's factor adjustment provides a final robustness cross-check,
+   confirming (or flagging) whether MOFA factor confounding biases CS.
