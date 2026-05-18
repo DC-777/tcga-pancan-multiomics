@@ -5,15 +5,12 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-brightgreen)](https://dc-777.github.io/tcga-pancan-multiomics/)
-[![GraphRAG](https://img.shields.io/badge/GraphRAG-Knowledge%20Graph-blueviolet)](https://dc-777.github.io/tcga-pancan-multiomics/graphrag.html)
 
 ---
 
 ## Live Demo
 
-> **[🔬 Open Interactive Dashboard](https://dc-777.github.io/tcga-pancan-multiomics/)** — 8-panel browser app (no install needed)  
-> **[🕸 Open GraphRAG Knowledge Graph](https://dc-777.github.io/tcga-pancan-multiomics/graphrag.html)** — Queryable knowledge graph + Q&A  
-> **[🗺 Open Pipeline Concept Map](https://dc-777.github.io/tcga-pancan-multiomics/concept_map.html)** — Full pipeline diagram
+> **[🔬 Open Interactive Dashboard](https://dc-777.github.io/tcga-pancan-multiomics/)** — 8-panel browser app (no install needed)
 
 ---
 
