@@ -65,37 +65,54 @@ def _dedup_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.loc[:, ~df.columns.duplicated()]
 
 
-def prepare_views(dataset) -> dict[str, np.ndarray]:
+def prepare_views(
+    dataset,
+    modalities: list[str] | None = None,
+) -> dict[str, np.ndarray]:
     """
     Returns dict of view_name -> (mat, feat_names) where mat is (samples x features).
     Views are already aligned to dataset.samples.
+
+    Parameters
+    ----------
+    modalities : list of str, optional
+        Subset of {"expression", "mutations", "cnv"} to include.
+        ``None`` (default) includes all three — backward-compatible.
     """
-    print("  Preparing expression view ...")
-    expr = _dedup_columns(dataset.expression)
-    gene_var  = expr.var(axis=0)
-    top_expr  = gene_var.nlargest(N_EXPR_GENES).index
-    expr_sub  = expr[top_expr]
-    expr_mat  = StandardScaler().fit_transform(expr_sub.values).astype(np.float32)
+    if modalities is None:
+        modalities = ["expression", "mutations", "cnv"]
 
-    print("  Preparing mutation view ...")
-    mut = _dedup_columns(dataset.mutations)
-    mut_freq = mut.mean(axis=0)
-    top_muts = mut_freq.nlargest(N_MUT_GENES).index
-    mut_mat  = mut[top_muts].values.astype(np.float32)
+    all_views: dict[str, tuple] = {}
 
-    print("  Preparing CNV view ...")
-    cnv = _dedup_columns(dataset.cnv)
-    cnv_var  = cnv.var(axis=0)
-    top_cnv  = cnv_var.nlargest(N_CNV_GENES).index
-    cnv_sub  = cnv[top_cnv]
-    cnv_mat  = StandardScaler().fit_transform(cnv_sub.values).astype(np.float32)
+    if "expression" in modalities:
+        print("  Preparing expression view ...")
+        expr = _dedup_columns(dataset.expression)
+        gene_var  = expr.var(axis=0)
+        top_expr  = gene_var.nlargest(N_EXPR_GENES).index
+        expr_sub  = expr[top_expr]
+        expr_mat  = StandardScaler().fit_transform(expr_sub.values).astype(np.float32)
+        all_views["expression"] = (expr_mat, list(top_expr))
 
-    print(f"  View shapes: expr={expr_mat.shape}, mut={mut_mat.shape}, cnv={cnv_mat.shape}")
-    return {
-        "expression": (expr_mat, list(top_expr)),
-        "mutations":  (mut_mat,  list(top_muts)),
-        "cnv":        (cnv_mat,  list(top_cnv)),
-    }
+    if "mutations" in modalities:
+        print("  Preparing mutation view ...")
+        mut = _dedup_columns(dataset.mutations)
+        mut_freq = mut.mean(axis=0)
+        top_muts = mut_freq.nlargest(N_MUT_GENES).index
+        mut_mat  = mut[top_muts].values.astype(np.float32)
+        all_views["mutations"] = (mut_mat, list(top_muts))
+
+    if "cnv" in modalities:
+        print("  Preparing CNV view ...")
+        cnv = _dedup_columns(dataset.cnv)
+        cnv_var  = cnv.var(axis=0)
+        top_cnv  = cnv_var.nlargest(N_CNV_GENES).index
+        cnv_sub  = cnv[top_cnv]
+        cnv_mat  = StandardScaler().fit_transform(cnv_sub.values).astype(np.float32)
+        all_views["cnv"] = (cnv_mat, list(top_cnv))
+
+    shapes = {v: all_views[v][0].shape for v in all_views}
+    print(f"  View shapes: {shapes}")
+    return all_views
 
 
 # ── MOFA+ training ────────────────────────────────────────────────────────────
@@ -109,7 +126,8 @@ def train_mofa(views: dict, samples: pd.Index, n_factors: int = N_FACTORS) -> ob
     from mofapy2.run.entry_point import entry_point
 
     view_names  = list(views.keys())
-    likelihoods = ["gaussian", "bernoulli", "gaussian"]
+    _likelihood_map = {"expression": "gaussian", "mutations": "bernoulli", "cnv": "gaussian"}
+    likelihoods = [_likelihood_map[v] for v in view_names]
 
     # mofapy2 requires globally unique feature names across all views
     # prefix with view abbreviation to guarantee uniqueness
@@ -434,7 +452,22 @@ def plot_top_weights(weights: dict[str, pd.DataFrame], factor: str,
 
 # ── main ──────────────────────────────────────────────────────────────────────
 
-def run_mofa_pipeline(dataset=None, n_factors: int = N_FACTORS) -> dict:
+def run_mofa_pipeline(
+    dataset=None,
+    n_factors: int = N_FACTORS,
+    modalities: list[str] | None = None,
+    out_suffix: str = "",
+) -> dict:
+    """
+    Parameters
+    ----------
+    modalities : list of str, optional
+        Subset of {"expression", "mutations", "cnv"}.
+        ``None`` (default) uses all three — backward-compatible.
+    out_suffix : str
+        Appended to output filenames, e.g. ``"_expr_only"`` produces
+        ``mofa_factors_expr_only.csv``.  Default ``""`` preserves original names.
+    """
     if dataset is None:
         from src.preprocess import load_multiomics
         dataset = load_multiomics()
@@ -443,7 +476,7 @@ def run_mofa_pipeline(dataset=None, n_factors: int = N_FACTORS) -> dict:
     samples = dataset.expression.index
 
     print("\n=== Preparing MOFA+ views ===")
-    views = prepare_views(dataset)
+    views = prepare_views(dataset, modalities=modalities)
 
     # Try mofapy2; fall back to NMF proxy
     print("\n=== Training MOFA+ ===")
@@ -461,16 +494,17 @@ def run_mofa_pipeline(dataset=None, n_factors: int = N_FACTORS) -> dict:
     var_df     = results["variance"]
 
     print("\n=== Saving results ===")
-    factors_df.to_csv(RESULTS_DIR / "mofa_factors.csv")
-    var_df.to_csv(RESULTS_DIR / "mofa_variance.csv")
+    factors_df.to_csv(RESULTS_DIR / f"mofa_factors{out_suffix}.csv")
+    var_df.to_csv(RESULTS_DIR / f"mofa_variance{out_suffix}.csv")
     for vname, w_df in weights.items():
-        w_df.to_csv(RESULTS_DIR / f"mofa_weights_{vname}.csv")
+        w_df.to_csv(RESULTS_DIR / f"mofa_weights_{vname}{out_suffix}.csv")
     print("  CSVs saved.")
 
     print("\n=== Generating plots ===")
-    plot_variance_explained(var_df, FIGURES_DIR / "mofa_variance_explained.png")
+    sfx = out_suffix  # short alias for filenames
+    plot_variance_explained(var_df, FIGURES_DIR / f"mofa_variance_explained{sfx}.png")
     plot_factor_umap(factors_df, samples, n_top=6,
-                     out_path=FIGURES_DIR / "mofa_factor_umap.png")
+                     out_path=FIGURES_DIR / f"mofa_factor_umap{sfx}.png")
 
     # Top factor by total variance explained
     total_var  = var_df.sum(axis=1)
@@ -478,20 +512,21 @@ def run_mofa_pipeline(dataset=None, n_factors: int = N_FACTORS) -> dict:
     print(f"  Top factor by total variance: {top_factor}")
 
     plot_factor_by_cancer_type(factors_df, dataset.cancer_types, top_factor,
-                               FIGURES_DIR / "mofa_factor_cancer_type.png")
+                               FIGURES_DIR / f"mofa_factor_cancer_type{sfx}.png")
     plot_factor_survival(factors_df, dataset.clinical, top_factor,
-                         FIGURES_DIR / "mofa_factor_survival.png")
+                         FIGURES_DIR / f"mofa_factor_survival{sfx}.png")
 
-    # Weight plots for top 5 factors
-    for fac in total_var.nlargest(5).index:
-        plot_top_weights(weights, fac,
-                         FIGURES_DIR / f"mofa_top_weights_{fac}.png")
+    # Weight plots for top 5 factors (skip for ablation runs to save time)
+    if not out_suffix:
+        for fac in total_var.nlargest(5).index:
+            plot_top_weights(weights, fac,
+                             FIGURES_DIR / f"mofa_top_weights_{fac}.png")
 
-    # Survival KM for each of top 3 factors
-    for fac in total_var.nlargest(3).index:
-        if fac != top_factor:
-            plot_factor_survival(factors_df, dataset.clinical, fac,
-                                 FIGURES_DIR / f"mofa_factor_survival_{fac}.png")
+        # Survival KM for each of top 3 factors
+        for fac in total_var.nlargest(3).index:
+            if fac != top_factor:
+                plot_factor_survival(factors_df, dataset.clinical, fac,
+                                     FIGURES_DIR / f"mofa_factor_survival_{fac}.png")
 
     print(f"\n  Variance explained summary (top factors):")
     print(var_df.head(10).to_string())

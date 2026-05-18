@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pan-Cancer Multiomics — Graphical RAG</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Georgia',serif;background:#f5f4f0;color:#1a1a1a;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+:root{
+  --col-factor:#4a1a6a;--col-gene:#1a3a5c;--col-drug:#1a4a1a;
+  --col-model:#5c2a00;--col-method:#7a1a00;--col-cancer:#1a4a4a;
+  --col-result:#4a3a00;--col-concept:#3a1a3a;
+  --bg-factor:#f0e6f8;--bg-gene:#ddeaf7;--bg-drug:#d6edda;
+  --bg-model:#fce8cc;--bg-method:#fad5c8;--bg-cancer:#d4f0f0;
+  --bg-result:#f8f0cc;--bg-concept:#ede6f0;
+}
+.header{background:#1a1a1a;color:#f0ede6;padding:10px 20px;display:flex;align-items:center;gap:14px;border-bottom:3px solid #c8b96e;flex-shrink:0}
+.header h1{font-size:0.95rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap}
+.header .subtitle{font-family:'Courier New',monospace;font-size:0.7rem;color:#aaa}
+.api-row{margin-left:auto;display:flex;align-items:center;gap:8px}
+.api-input{font-family:'Courier New',monospace;font-size:0.68rem;background:#2a2a2a;border:1px solid #555;color:#ddd;padding:4px 8px;width:220px;outline:none;border-radius:2px}
+.api-input::placeholder{color:#666}
+.api-btn{font-size:0.65rem;font-family:'Courier New',monospace;background:#c8b96e;color:#1a1a1a;border:none;padding:4px 10px;cursor:pointer;font-weight:700;letter-spacing:0.05em;border-radius:2px}
+.api-status{font-size:0.65rem;font-family:'Courier New',monospace;color:#6abf8a}
+
+.filters{background:#eeece6;border-bottom:1px solid #ccc;padding:6px 16px;display:flex;gap:14px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.filter-label{font-family:'Courier New',monospace;font-size:0.6rem;color:#888;text-transform:uppercase;letter-spacing:0.07em;margin-right:4px}
+.filter-chip{display:inline-flex;align-items:center;gap:4px;font-family:'Courier New',monospace;font-size:0.62rem;padding:2px 8px;border-radius:2px;border:1.5px solid;cursor:pointer;user-select:none;transition:opacity 0.15s}
+.filter-chip.off{opacity:0.35}
+.search-wrap{margin-left:auto;display:flex;align-items:center;gap:6px}
+.graph-search{font-family:'Courier New',monospace;font-size:0.72rem;background:#fff;border:1px solid #bbb;padding:4px 10px;width:200px;outline:none;border-radius:2px}
+
+.main{display:flex;flex:1;overflow:hidden}
+.graph-panel{flex:1;position:relative;overflow:hidden;background:#faf9f5}
+svg#graph{width:100%;height:100%;cursor:grab}
+svg#graph:active{cursor:grabbing}
+.graph-tooltip{position:absolute;background:#1a1a1a;color:#f0ede6;font-family:'Courier New',monospace;font-size:0.68rem;padding:6px 10px;border-radius:2px;pointer-events:none;z-index:100;max-width:220px;line-height:1.4;white-space:pre-line;display:none}
+
+.qa-panel{width:400px;min-width:400px;display:flex;flex-direction:column;border-left:2px solid #ccc;background:#fff}
+.qa-header{padding:12px 16px 8px;border-bottom:1px solid #eee;background:#faf9f5}
+.qa-header h2{font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#333}
+.qa-header p{font-size:0.7rem;color:#888;font-style:italic;margin-top:2px}
+.qa-messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:100%;font-size:0.8rem;line-height:1.55}
+.msg.user{background:#f0f4fc;border:1px solid #d0ddf0;padding:8px 12px;border-radius:2px;border-left:3px solid #7aadd4;color:#1a3a5c}
+.msg.assistant{background:#f8f7f3;border:1px solid #e0ded8;padding:8px 12px;border-radius:2px;border-left:3px solid #c8b96e}
+.msg.assistant .ans-body{color:#222;margin-bottom:6px}
+.msg.assistant .ans-body strong{color:#1a1a1a}
+.msg.assistant .ans-body em{color:#555;font-style:italic}
+.msg.assistant .sources{border-top:1px solid #e8e4d8;padding-top:6px;margin-top:6px}
+.msg.assistant .src-label{font-family:'Courier New',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:#aaa;margin-bottom:4px}
+.src-chips{display:flex;gap:4px;flex-wrap:wrap}
+.src-chip{font-family:'Courier New',monospace;font-size:0.6rem;padding:1px 7px;border-radius:2px;cursor:pointer;border:1px solid}
+.src-chip:hover{opacity:0.7}
+.thinking{display:flex;align-items:center;gap:6px;color:#aaa;font-style:italic;font-size:0.75rem;padding:4px 0}
+.thinking span{animation:blink 1.2s infinite}
+.thinking span:nth-child(2){animation-delay:0.2s}
+.thinking span:nth-child(3){animation-delay:0.4s}
+@keyframes blink{0%,80%,100%{opacity:0.2}40%{opacity:1}}
+
+.qa-input-row{padding:10px 12px;border-top:1px solid #eee;background:#faf9f5;display:flex;gap:8px}
+.qa-input{flex:1;font-family:'Georgia',serif;font-size:0.8rem;border:1px solid #ccc;padding:8px 10px;outline:none;resize:none;border-radius:2px;background:#fff;max-height:80px}
+.qa-input:focus{border-color:#7aadd4}
+.qa-send{background:#1a1a1a;color:#f0ede6;border:none;padding:8px 14px;cursor:pointer;font-family:'Courier New',monospace;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;border-radius:2px;white-space:nowrap}
+.qa-send:hover{background:#333}
+.qa-send:disabled{background:#aaa;cursor:not-allowed}
+
+.node-detail{position:absolute;bottom:0;left:0;right:400px;background:#fff;border-top:2px solid #c8b96e;padding:10px 18px;display:flex;gap:20px;align-items:flex-start;font-size:0.78rem;max-height:130px;overflow:hidden;transition:max-height 0.2s;z-index:10}
+.node-detail.hidden{max-height:0;padding:0;border-top:none}
+.nd-close{position:absolute;top:6px;right:12px;background:none;border:none;cursor:pointer;font-size:1rem;color:#888}
+.nd-type{font-family:'Courier New',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 6px;border-radius:2px;margin-bottom:6px;display:inline-block}
+.nd-title{font-size:0.9rem;font-weight:700;margin-bottom:4px}
+.nd-body{color:#444;line-height:1.5;max-width:500px}
+.nd-meta{display:flex;flex-direction:column;gap:6px;min-width:160px}
+.nd-meta-item{display:flex;gap:6px;align-items:baseline}
+.nd-meta-item .k{font-family:'Courier New',monospace;font-size:0.6rem;color:#999;text-transform:uppercase;letter-spacing:0.05em;min-width:60px}
+.nd-meta-item .v{font-family:'Courier New',monospace;font-size:0.72rem;color:#333;font-weight:700}
+.nd-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.nd-tag{font-family:'Courier New',monospace;font-size:0.6rem;padding:1px 6px;border-radius:2px}
+
+/* suggested questions */
+.suggestions{padding:8px 14px 0;display:flex;flex-wrap:wrap;gap:5px}
+.sug-btn{font-size:0.67rem;font-family:'Courier New',monospace;background:#f0f4fc;border:1px solid #c8d8f0;color:#1a3a5c;padding:3px 9px;cursor:pointer;border-radius:2px}
+.sug-btn:hover{background:#ddeaf7}
+</style>
+</head>
+<body>
+<!-- HEADER -->
+<div class="header">
+  <h1>Pan-Cancer Multiomics — Graphical RAG</h1>
+  <span class="subtitle">7,902 samples · 31 cancer types · MOFA+ · SHAP · DiD</span>
+  <div class="api-row">
+    <span style="font-family:'Courier New',monospace;font-size:0.65rem;color:#888">Claude API key (optional):</span>
+    <input id="apiKeyInput" class="api-input" type="password" placeholder="sk-ant-..."/>
+    <button class="api-btn" onclick="setApiKey()">Connect</button>
+    <span id="apiStatus" class="api-status" style="display:none">✓ Connected</span>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <span class="filter-label">Show:</span>
+  <span id="fc-factor"  class="filter-chip" style="background:var(--bg-factor);color:var(--col-factor);border-color:var(--col-factor)" onclick="toggleFilter('factor')">● MOFA Factors</span>
+  <span id="fc-gene"    class="filter-chip" style="background:var(--bg-gene);color:var(--col-gene);border-color:var(--col-gene)"   onclick="toggleFilter('gene')">● Genes</span>
+  <span id="fc-drug"    class="filter-chip" style="background:var(--bg-drug);color:var(--col-drug);border-color:var(--col-drug)"   onclick="toggleFilter('drug')">● Drugs</span>
+  <span id="fc-model"   class="filter-chip" style="background:var(--bg-model);color:var(--col-model);border-color:var(--col-model)" onclick="toggleFilter('model')">● Models</span>
+  <span id="fc-method"  class="filter-chip" style="background:var(--bg-method);color:var(--col-method);border-color:var(--col-method)" onclick="toggleFilter('method')">● Methods</span>
+  <span id="fc-cancer"  class="filter-chip" style="background:var(--bg-cancer);color:var(--col-cancer);border-color:var(--col-cancer)" onclick="toggleFilter('cancer')">● Cancer Types</span>
+  <span id="fc-result"  class="filter-chip" style="background:var(--bg-result);color:var(--col-result);border-color:var(--col-result)" onclick="toggleFilter('result')">● Results</span>
+  <div class="search-wrap">
+    <input id="graphSearch" class="graph-search" placeholder="Search nodes…" oninput="searchGraph(this.value)"/>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- GRAPH -->
+  <div class="graph-panel" id="graphPanel">
+    <svg id="graph"></svg>
+    <div class="graph-tooltip" id="tooltip"></div>
+    <!-- Node detail panel -->
+    <div class="node-detail hidden" id="nodeDetail">
+      <button class="nd-close" onclick="closeDetail()">×</button>
+      <div id="ndLeft" style="flex:1;min-width:0"></div>
+      <div class="nd-meta" id="ndMeta"></div>
+    </div>
+  </div>
+
+  <!-- Q&A PANEL -->
+  <div class="qa-panel">
+    <div class="qa-header">
+      <h2>Ask about the research</h2>
+      <p>Ask about any factor, gene, drug, model, result, or method</p>
+    </div>
+    <div class="suggestions" id="suggestions">
+      <button class="sug-btn" onclick="askSuggestion(this)">What is Factor 8?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">Which factors are causally validated?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">Drugs targeting KRAS?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">How does MOFA+ work?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">Compare FTT vs XGBoost</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">KRAS×Factor8 DDD result?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">What drives Factor 6?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">Tazemetostat targets?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">Which modality drives survival prediction?</button>
+      <button class="sug-btn" onclick="askSuggestion(this)">Why does expression-only beat joint model?</button>
+    </div>
+    <div class="qa-messages" id="qaMessages"></div>
+    <div class="qa-input-row">
+      <textarea id="qaInput" class="qa-input" rows="2" placeholder="Ask about factors, genes, drugs, models, results…" onkeydown="handleKey(event)"></textarea>
+      <button id="sendBtn" class="qa-send" onclick="submitQuestion()">Ask →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  KNOWLEDGE BASE
+// ═══════════════════════════════════════════════════════════════
+const TYPE_COLOR = {
+  factor:'#4a1a6a', gene:'#1a3a5c', drug:'#1a4a1a',
+  model:'#5c2a00', method:'#7a1a00', cancer:'#1a4a4a',
+  result:'#4a3a00', concept:'#3a1a3a'
+};
+const TYPE_BG = {
+  factor:'#f0e6f8', gene:'#ddeaf7', drug:'#d6edda',
+  model:'#fce8cc', method:'#fad5c8', cancer:'#d4f0f0',
+  result:'#f8f0cc', concept:'#ede6f0'
+};
+
+const NODES = [
+  // ── MOFA+ Factors ──────────────────────────────────────────
+  {id:'f8',  type:'factor', label:'Factor 8',  r:18, importance:3,
+   info:'Protease invasion + pan-driver mutations. Top SHAP predictor (avg |SHAP|=0.283) but NOT causally validated — confounded by cancer-type composition.',
+   meta:{shap:'0.283', var_expl:'3.2%', causal_att:'+0.298', causal_p:'0.134', status:'Confounded'},
+   tags:['SHAP #1','invasion','TP53/KRAS','not validated'],
+   kb:`Factor 8 is the top-ranked MOFA+ factor by SHAP score (avg |SHAP| = 0.283 across FTT, XGBoost, LightGBM), with an inter-model concordance coefficient of just 0.031 — the lowest of all 18 factors, confirming it is a genuine biological signal independently discovered by all three model architectures. At the expression level it is dominated by serine proteases PRSS3 and KLK6, and invasion markers FERMT1, SERPINB5, FGFBP1, IL1A. At the mutation level it captures the pan-cancer driver landscape: TP53 (positive loading), KRAS, APC, IDH1, ATRX, KMT2D. At the CNV level: GAS6 (AXL ligand), TFDP1, CDC16 amplification. Despite its predictive dominance, Callaway-Sant'Anna DiD analysis found ATT = +0.298, p = 0.134 — not significant. HonestDiD sensitivity analysis showed the CI includes zero even at M=0 (exact parallel trends), meaning its SHAP signal reflects cancer-type composition confounding rather than a direct within-cancer-type causal effect. However, Triple Difference analysis identified KRAS mutation × Factor 8 as a significant synergistic co-dependency (DDD = -0.472, p = 0.022).`},
+
+  {id:'f6',  type:'factor', label:'Factor 6',  r:16, importance:3,
+   info:'9p24.1 immune checkpoint amplicon (CD274/PD-L1, JAK2). Causally validated: ATT=−0.486, p<10⁻¹².',
+   meta:{shap:'0.219', var_expl:'0.8%', causal_att:'-0.486', causal_p:'<0.001', status:'✓ Validated'},
+   tags:['SHAP #2','9p24.1','PD-L1/JAK2','causally validated'],
+   kb:`Factor 6 defines the 9p24.1 immune checkpoint amplicon — co-amplification of CD274 (PD-L1), PDCD1LG2 (PD-L2), and JAK2 at chromosomal locus 9p24.1. This amplicon is the defining alteration of classical Hodgkin lymphoma and a pan-cancer immune evasion mechanism in NSCLC, TNBC, bladder carcinoma, and DLBCL. JAK2 co-amplification activates JAK-STAT signaling and transcriptionally upregulates PD-L1, creating a self-reinforcing immune escape circuit. Factor 6 also captures CNV gains in RLN1/RLN2 (relaxin — T-cell exhaustion) and IL33 (M2 macrophage polarization). SHAP score = 0.219. Callaway-Sant'Anna DiD: ATT = -0.486, SE = 0.067, p < 10⁻¹². HonestDiD: CI excludes zero even at M=0.50 (robust to 50% pre-trend violations). TROP confirmation: ATT = -0.41. Elevated to co-primary therapeutic target. Key therapies: pembrolizumab/nivolumab (anti-PD-1), ruxolitinib (JAK inhibitor), itepekimab (anti-IL33).`},
+
+  {id:'f1',  type:'factor', label:'Factor 1',  r:15, importance:2,
+   info:'Squamous lineage programme (TP63, KRT16/17, NECTIN4). Causally validated: ATT=−0.129, p=0.028.',
+   meta:{shap:'0.162', var_expl:'6.1%', causal_att:'-0.129', causal_p:'0.028', status:'✓ Validated'},
+   tags:['SHAP #3','squamous','TP63/KRT','NECTIN4'],
+   kb:`Factor 1 defines the squamous cell carcinoma lineage programme across HNSC, LUSC, CESC, and esophageal tumors. Expression signature: TP63, KRT16, KRT17, KRT15, NECTIN4, GJB2, SFN. CNV gains in DCUN1D1 (3q26.3 amplicon, >60% of HNSCC/LUSC) and EIF4G1. The FT-Transformer assigns Factor 1 approximately twice the SHAP weight of tree-based models (0.245 vs ~0.12), suggesting non-linear interaction effects between squamous identity and cancer-type covariates that attention mechanisms capture better than trees. SHAP score = 0.162, var explained = 6.1%. Callaway-Sant'Anna DiD: ATT = -0.129, SE = 0.059, p = 0.028 — causally validated. NECTIN4 is the key actionable target: FDA-approved enfortumab vedotin (anti-NECTIN4 ADC) for urothelial cancer; Factor 1 loading score could predict eligibility across histologies. DCUN1D1: neddylation inhibition with pevonedistat/MLN4924.`},
+
+  {id:'f15', type:'factor', label:'Factor 15', r:14, importance:2,
+   info:'Luminal de-differentiation (GATA3↓, PTEN/ARID1A loss). Causally validated: ATT=−0.285, p<10⁻¹⁷.',
+   meta:{shap:'0.120', var_expl:'2.5%', causal_att:'-0.285', causal_p:'<0.001', status:'✓ Validated'},
+   tags:['SHAP #4','luminal','ARID1A/PTEN','tazemetostat'],
+   kb:`Factor 15 captures loss of luminal epithelial identity. Negatively loaded (loss → worse survival): GATA3, MUC1, TFF1, SCGB2A2, CA12, PRLR — all luminal markers. Positively loaded: KLK2, neuroendocrine markers. Mutation loading: PTEN, ARID1A, KMT2C (negative — loss drives worse outcomes), IDH1 (positive). Defines de-differentiated tumors: TNBC, CRPC, endocrine-resistant uterine cancers. SHAP = 0.120, var explained = 2.5%. Callaway-Sant'Anna DiD: ATT = -0.285, SE = 0.033, p < 10⁻¹⁷ — most significant of all factors. HonestDiD: CI excludes zero even at M=0.50. TROP: ATT = -0.27. Triple Difference: PIK3CA × F15 DDD = -0.213, p = 0.267 (not significant). Elevated to co-primary target. Synthetic lethality: ARID1A loss → EZH2 dependence → tazemetostat (FDA-approved). KMT2C loss → PRMT5 dependence → GSK3326595. PTEN loss → PI3K/AKT → capivasertib + fulvestrant.`},
+
+  {id:'f12', type:'factor', label:'Factor 12', r:13, importance:2,
+   info:'Thyroid differentiation vs. IDH-glioma axis (BRAF V600E, IDH1, TG, TPO).',
+   meta:{shap:'0.120', var_expl:'5.3%', causal_att:'-0.026', causal_p:'0.652', status:'Not sig.'},
+   tags:['SHAP #5','thyroid','BRAF V600E','IDH1'],
+   kb:`Factor 12 captures a differentiation gradient from well-differentiated thyroid tumors (high DUOX2, TG, TPO, TMPRSS2; BRAF V600E mutation; better survival) to IDH-wild-type GBM and aggressive RCC (IDH1-, CIC-, ATRX-, PBRM1-; worse survival). SHAP = 0.120, var explained = 5.3%. Callaway-Sant'Anna DiD: ATT = -0.026, SE = 0.059, p = 0.652 — not significant at aggregate level. Therapeutics: BRAF V600E → dabrafenib+trametinib or encorafenib (FDA-approved); IDH1 → ivosidenib (FDA-approved for AML, cholangiocarcinoma, glioma); GPC5/GPC6 CNV amplification → emerging ADC/CAR-T targets; TMPRSS2 → nafamostat/camostat. Triple Difference: BRAF × F12 DDD = +0.062, p = 0.868 (not significant).`},
+
+  {id:'f4',  type:'factor', label:'Factor 4',  r:10, importance:1,
+   info:'Hepatocyte/GI differentiation programme (ALDOB, HNF4A, ALB). SHAP rank #14.',
+   meta:{shap:'0.068', var_expl:'5.8%', status:'Not prioritized'},
+   tags:['hepatocyte','GI','LIHC/COAD'],
+   kb:`Factor 4 captures hepatocyte/GI differentiation (ALDOB, HNF4A, CDHR5, ALB). Explains 5.8% of cross-modal variance but SHAP rank = 14, demonstrating the orthogonality of variance explained and prognostic relevance. Prominent in LIHC and COAD cancer types.`},
+
+  {id:'f7',  type:'factor', label:'Factor 7',  r:10, importance:1,
+   info:'Glioma/neural programme (GFAP, BCAN, IDH1/ATRX mutations). SHAP rank #16.',
+   meta:{shap:'0.062', var_expl:'4.7%', status:'Not prioritized'},
+   tags:['glioma','neural','IDH1/ATRX'],
+   kb:`Factor 7 captures the glioma/astrocyte programme (GFAP, BCAN, PTPRZ1, MIR9-1HG) with IDH1 and ATRX mutation co-loading. SHAP rank = 16 despite 4.7% variance explained.`},
+
+  // ── Genes ──────────────────────────────────────────────────
+  {id:'tp53', type:'gene', label:'TP53', r:13, importance:3,
+   info:'Most recurrent pan-cancer TSG. Loaded on F8, F1, F15, F12. Target: APR-246 (eprenetapopt, Phase II/III).',
+   meta:{role:'TSG', factors:'F8/F1/F15/F12', modality:'mutation', contrib:'0.031'},
+   tags:['TSG','driver','APR-246'],
+   kb:`TP53 is the most frequently mutated gene in human cancer (>50% of TCGA tumors). In this analysis it loads positively on Factor 8 (higher TP53 mutation rate → higher F8 score → worse survival), and also appears on F1, F15, F12. Gene-level SHAP contribution = 0.031. Therapeutic strategy: TP53 reactivation with APR-246 (eprenetapopt) — restores mutant p53 to wild-type conformation; Phase III in MDS/AML, Phase II in multiple solid tumors. MDM2 inhibitors (nutlin-3a, RG7112) for TP53 wild-type cancers. TP53 is a marker of the pan-cancer driver landscape captured by Factor 8.`},
+
+  {id:'kras', type:'gene', label:'KRAS', r:13, importance:3,
+   info:'Pan-cancer oncogene. F8/F6 loaded. KRAS G12C/G12D → sotorasib, adagrasib, MRTX1133. DDD×F8 = −0.472 p=0.022.',
+   meta:{role:'Oncogene', factors:'F8/F6', modality:'mutation', contrib:'0.029'},
+   tags:['oncogene','RAS-MAPK','sotorasib','DDD significant'],
+   kb:`KRAS is mutated in ~30% of pan-cancer TCGA tumors, most commonly G12C (lung), G12D (pancreas/colorectal), G12V (colorectal). Loads on Factor 8 and Factor 6. The Triple Difference analysis found KRAS mutation × Factor 8 activation = DDD of -0.472, SE=0.208, p=0.022 — the only significant synergistic co-dependency in the study. This means co-occurrence of KRAS mutation and active protease-invasion program (F8) causes survival loss significantly beyond the additive sum of either alone. Therapeutics: KRAS G12C → sotorasib (AMG-510, FDA-approved for NSCLC) and adagrasib (MRTX849, FDA-approved). KRAS G12D → MRTX1133 (Phase I). Pan-KRAS → SOS1 inhibitors (BI-3406), SHP2 inhibitors (RMC-4630). Clinical implication: KRAS inhibitor + serine protease inhibitor (nafamostat) or AXL inhibitor (bemcentinib) combination.`},
+
+  {id:'idh1', type:'gene', label:'IDH1', r:12, importance:2,
+   info:'Neomorphic mutation → 2-HG oncometabolite. F8, F12, F15. Ivosidenib (FDA-approved).',
+   meta:{role:'Oncogene (neomorphic)', factors:'F8/F12/F15', modality:'mutation'},
+   tags:['IDH','2-HG','ivosidenib','glioma'],
+   kb:`IDH1 R132H/C/S/G mutations produce the oncometabolite 2-hydroxyglutarate (2-HG), inhibiting TET demethylases and causing widespread DNA hypermethylation (CpG island methylator phenotype). Loads on F8 (pan-driver axis), F12 (thyroid/glioma), and F15 (luminal de-diff). IDH1 mutation associates with better survival in glioma (LGG/GBM) and cholangiocarcinoma. Therapeutic: ivosidenib (AG-120) is FDA-approved for IDH1-mutant AML, cholangiocarcinoma, and low-grade glioma.`},
+
+  {id:'cd274', type:'gene', label:'CD274/PD-L1', r:12, importance:2,
+   info:'9p24.1 immune checkpoint. F6 CNV amplification → pembrolizumab response biomarker.',
+   meta:{role:'Immune checkpoint', factors:'F6', modality:'CNV', chr:'9p24.1'},
+   tags:['PD-L1','checkpoint','pembrolizumab','9p24.1'],
+   kb:`CD274 (PD-L1) encodes the PD-L1 protein that inhibits T-cell activation by binding PD-1. In Factor 6, CD274 shows CNV amplification at the 9p24.1 locus, co-amplified with PDCD1LG2 (PD-L2) and JAK2. This amplicon is present in ~50% of classical Hodgkin lymphoma and ~10-15% of NSCLC, TNBC, and bladder cancers. JAK2 co-amplification both activates STAT3 signaling and transcriptionally upregulates PD-L1 expression via JAK-STAT. High CD274 CNV = predicted responder to anti-PD-1/PD-L1 therapy (pembrolizumab, nivolumab, atezolizumab). The Factor 6 causal validation (ATT=-0.486) strengthens the rationale for checkpoint inhibitor trials targeting this amplicon across cancer types.`},
+
+  {id:'arid1a', type:'gene', label:'ARID1A', r:11, importance:2,
+   info:'SWI/SNF complex TSG. Loss in F15. Synthetic lethality: ARID1A loss → EZH2 dependence → tazemetostat.',
+   meta:{role:'TSG (SWI/SNF)', factors:'F15', modality:'mutation'},
+   tags:['TSG','epigenetic','tazemetostat','synthetic lethality'],
+   kb:`ARID1A encodes the BAF250a subunit of the SWI/SNF chromatin remodeling complex. Loss-of-function mutations occur in ~10% of pan-cancer TCGA, highest in endometrial (40%), bladder (25%), gastric (15%), and ovarian clear cell (50%) cancers. ARID1A loss is negatively loaded on Factor 15 (loss → higher F15 score → worse survival). Key synthetic lethality: ARID1A loss disrupts SWI/SNF-mediated gene activation, creating dependence on EZH2 for gene silencing. EZH2 inhibitor tazemetostat (FDA-approved for follicular lymphoma) is now in Phase II trials for ARID1A-mutant solid tumors. Additional synthetic lethalities: ARID1A loss → PARP inhibitor sensitivity, ATR inhibitor sensitivity.`},
+
+  {id:'braf', type:'gene', label:'BRAF', r:11, importance:2,
+   info:'V600E oncogene. F12 positive loading (thyroid better survival). Dabrafenib+trametinib (FDA-approved).',
+   meta:{role:'Oncogene', factors:'F12/F8 (neg)', modality:'mutation'},
+   tags:['oncogene','MAPK','dabrafenib','thyroid/melanoma'],
+   kb:`BRAF V600E is the defining mutation in thyroid carcinoma (60%), melanoma (50%), colon cancer (10%), and low-grade glioma. In Factor 12, BRAF V600E loads positively, associating with the thyroid differentiation program and better survival (thyroid carcinoma is the most favorable TCGA cancer type by OS). In Factor 8, BRAF loads negatively. Triple Difference: BRAF × F12 DDD = +0.062, p = 0.868 (not significant). Therapeutics: BRAF V600E → dabrafenib + trametinib (FDA-approved for melanoma, NSCLC, anaplastic thyroid). Encorafenib for BRAF V600E colorectal cancer.`},
+
+  {id:'pik3ca', type:'gene', label:'PIK3CA', r:11, importance:2,
+   info:'PI3K catalytic subunit. F6/F15 loaded. H1047R/E545K hotspot mutations. Alpelisib (FDA-approved).',
+   meta:{role:'Oncogene', factors:'F6/F15', modality:'mutation'},
+   tags:['oncogene','PI3K-AKT','alpelisib'],
+   kb:`PIK3CA encodes the p110α catalytic subunit of PI3K. Activating mutations (H1047R in kinase domain, E545K/E542K in helical domain) occur in ~30% of breast, ~20% of colorectal, ~10% of endometrial cancers. Loads on Factor 6 (positively) and Factor 15 (negatively — loss associates with worse outcomes). Triple Difference: PIK3CA × F15 DDD = -0.213, p = 0.267 (not significant at current power). Therapeutics: alpelisib (BYL719) + fulvestrant for PIK3CA-mutant ER+ breast cancer (FDA-approved). Capivasertib (AZD5363) + fulvestrant — positive Phase III FAKTION data.`},
+
+  {id:'kmt2c', type:'gene', label:'KMT2C/D', r:10, importance:2,
+   info:'Histone H3K4 methyltransferase TSG. F8/F15 loaded. Loss → PRMT5 dependence → GSK3326595.',
+   meta:{role:'TSG (chromatin)', factors:'F8/F1/F15', modality:'mutation'},
+   tags:['TSG','epigenetic','PRMT5','GSK3326595'],
+   kb:`KMT2C (MLL3) and KMT2D (MLL4) are histone H3K4me1 methyltransferases in the COMPASS complex, acting as tumor suppressors in multiple cancer types. Loss-of-function mutations are frequent in BLCA (25%), HNSC (20%), LUAD (15%), and many other types. Negatively loaded on Factor 15 (loss → worse survival). Synthetic lethality: KMT2C/D loss creates dependence on PRMT5 (symmetric arginine methylation) for gene activation. GSK3326595 (PRMT5 inhibitor) is in Phase I/II trials. Also loads on Factor 8 and Factor 1.`},
+
+  {id:'pten', type:'gene', label:'PTEN', r:10, importance:2,
+   info:'PI3K-AKT TSG. F15 loaded. Loss → capivasertib + fulvestrant.',
+   meta:{role:'TSG', factors:'F15', modality:'mutation'},
+   tags:['TSG','PI3K-AKT','capivasertib'],
+   kb:`PTEN (phosphatase and tensin homolog) is the primary negative regulator of the PI3K-AKT pathway. Loss-of-function mutations/deletions are common in glioblastoma (40%), endometrial (50%), prostate (20%), and TNBC (15%). Negatively loaded on Factor 15 (loss → higher F15 score → worse survival). Therapeutic: PTEN loss → PI3K/AKT pathway dependence → capivasertib (AZD5363) + fulvestrant, showing Phase III benefit in ER+ PTEN-null breast cancer.`},
+
+  {id:'tp63', type:'gene', label:'TP63', r:10, importance:1,
+   info:'Master transcription factor of squamous identity. F1 expression. HNSC/LUSC/CESC.',
+   meta:{role:'Lineage TF', factors:'F1', modality:'expression'},
+   tags:['squamous','lineage','HNSC/LUSC'],
+   kb:`TP63 (tumor protein p63) is the master transcription factor controlling squamous differentiation. It drives expression of KRT16, KRT17, KRT15, NECTIN4, SFN, and GJB2 — all top Factor 1 expression loadings. TP63 amplification occurs in >60% of HNSCC and LUSC. Factor 1 is defined by this squamous identity programme, explaining 6.1% of cross-modal variance. Factor 1 SHAP = 0.162 (rank #3).`},
+
+  {id:'gas6', type:'gene', label:'GAS6/AXL', r:10, importance:1,
+   info:'AXL receptor ligand. F8 CNV amplification → AXL-GAS6 survival axis → bemcentinib.',
+   meta:{role:'Oncogene', factors:'F8', modality:'CNV'},
+   tags:['AXL','invasion','bemcentinib'],
+   kb:`GAS6 (growth arrest-specific 6) is the ligand for the AXL receptor tyrosine kinase. GAS6 CNV amplification is captured by Factor 8. The GAS6-AXL axis promotes cancer cell survival, invasion, epithelial-mesenchymal transition, and resistance to EGFR inhibitors. AXL inhibitors: bemcentinib (BGB324, Phase I/II in NSCLC, AML), cabozantinib (multi-RTK inhibitor including AXL, MET, VEGFR).`},
+
+  {id:'prss3', type:'gene', label:'PRSS3/KLK6', r:9, importance:1,
+   info:'Serine proteases. F8 expression. ECM remodeling/invasion. Nafamostat, camostat (Phase I).',
+   meta:{role:'Protease', factors:'F8', modality:'expression'},
+   tags:['protease','invasion','nafamostat'],
+   kb:`PRSS3 (mesotrypsin) and KLK6 (kallikrein-6) are serine proteases that top-load Factor 8 in the expression view. They drive extracellular matrix remodeling and invasion signaling. Both are overexpressed in pancreatic, colorectal, and ovarian cancers. Therapeutic: nafamostat and camostat (serine protease inhibitors, used clinically in pancreatitis) are being repurposed as anti-invasion agents. Anti-KLK6 antibodies in preclinical development.`},
+
+  {id:'nectin4', type:'gene', label:'NECTIN4', r:9, importance:1,
+   info:'Cell adhesion molecule. F1 expression. Enfortumab vedotin ADC target (FDA-approved, BLCA).',
+   meta:{role:'ADC target', factors:'F1', modality:'expression'},
+   tags:['ADC','enfortumab vedotin','squamous'],
+   kb:`NECTIN4 is a cell adhesion molecule expressed on basal/squamous tumor cells and the target of enfortumab vedotin (EV), an anti-NECTIN4 antibody-drug conjugate (MMAE payload). EV is FDA-approved for urothelial carcinoma (with pembrolizumab as first-line, or monotherapy after platinum). Factor 1 loading score could serve as a biomarker for EV sensitivity beyond urothelial cancer, identifying NECTIN4-high squamous tumors in HNSC and LUSC.`},
+
+  // ── Drugs ──────────────────────────────────────────────────
+  {id:'pembrolizumab', type:'drug', label:'Pembrolizumab', r:11, importance:2,
+   info:'Anti-PD-1 checkpoint inhibitor. F6 (9p24.1 amplicon) — biomarker for response. FDA-approved 20+ indications.',
+   meta:{target:'PD-1/CD279', factor:'F6', stage:'FDA-approved'},
+   tags:['checkpoint','immunotherapy','F6'],
+   kb:`Pembrolizumab (Keytruda) is an anti-PD-1 monoclonal antibody. In this study, Factor 6 (9p24.1 amplicon with CD274/PD-L1 co-amplification) is causally validated as a survival determinant (ATT=-0.486, p<10⁻¹²), directly supporting pembrolizumab for 9p24.1-amplified tumors across histologies. FDA-approved for 20+ indications including MSI-H solid tumors (agnostic approval), NSCLC, melanoma, HNSC, bladder, cervical, endometrial. Combination with ruxolitinib (JAK2 inhibitor): rationale from Factor 6 JAK2 co-amplification — block transcriptional PD-L1 reinduction after checkpoint blockade.`},
+
+  {id:'sotorasib', type:'drug', label:'Sotorasib', r:10, importance:2,
+   info:'KRAS G12C covalent inhibitor (AMG-510). FDA-approved for NSCLC. Factor 8/KRAS axis.',
+   meta:{target:'KRAS G12C', factor:'F8', stage:'FDA-approved'},
+   tags:['KRAS G12C','RAS-MAPK','FDA-approved','F8'],
+   kb:`Sotorasib (AMG-510, Lumakras) is the first FDA-approved KRAS inhibitor — a covalent inhibitor that binds the GDP-locked KRAS G12C inactive state. Approved for NSCLC with KRAS G12C mutation. In this study, KRAS loads on Factor 8, and the Triple Difference found KRAS × F8 synergy (DDD=-0.472, p=0.022), nominating KRAS inhibitor + anti-invasion combination. Adagrasib (MRTX849) is the second approved KRAS G12C inhibitor with CNS activity.`},
+
+  {id:'tazemetostat', type:'drug', label:'Tazemetostat', r:10, importance:2,
+   info:'EZH2 inhibitor. F15/ARID1A loss synthetic lethality. FDA-approved for follicular lymphoma.',
+   meta:{target:'EZH2', factor:'F15', stage:'FDA-approved / Phase II solid'},
+   tags:['EZH2','epigenetic','ARID1A','F15','FDA-approved'],
+   kb:`Tazemetostat (Tazverik) is an EZH2 methyltransferase inhibitor. FDA-approved for relapsed/refractory follicular lymphoma (EZH2-mutant or wild-type) and epithelioid sarcoma. In this study, Factor 15 is causally validated (ATT=-0.285, p<10⁻¹⁷) and ARID1A loss is a key Factor 15 driver. ARID1A loss → SWI/SNF disruption → EZH2 synthetic lethality. Tazemetostat is in Phase II trials for ARID1A-mutant solid tumors. Also relevant for KMT2C/D-mutant tumors as part of the chromatin remodeling loss synthetic lethality landscape.`},
+
+  {id:'ivosidenib', type:'drug', label:'Ivosidenib', r:10, importance:2,
+   info:'IDH1 inhibitor. F8/F12/F15. FDA-approved for AML, cholangiocarcinoma, glioma.',
+   meta:{target:'IDH1 R132', factor:'F8/F12/F15', stage:'FDA-approved'},
+   tags:['IDH1','2-HG','FDA-approved','glioma'],
+   kb:`Ivosidenib (AG-120, Tibsovo) inhibits the neomorphic IDH1 R132H/C/G mutant enzyme, blocking 2-hydroxyglutarate (2-HG) production. FDA-approved for IDH1-mutant AML (monotherapy and with azacitidine), IDH1-mutant cholangiocarcinoma (with gemcitabine/cisplatin), and IDH1-mutant low-grade glioma. IDH1 appears in Factor 8 (pan-driver mutation axis), Factor 12 (thyroid/IDH gradient), and Factor 15 (luminal de-differentiation).`},
+
+  {id:'apr246', type:'drug', label:'APR-246/Eprenetapopt', r:9, importance:2,
+   info:'TP53 reactivator. F8/F1/F15. Restores mutant p53 → wild-type fold. Phase II/III.',
+   meta:{target:'TP53 (mutant)', factor:'F8/F1/F15', stage:'Phase II/III'},
+   tags:['TP53','TSG restoration','Phase III','F8'],
+   kb:`APR-246 (eprenetapopt) is a small molecule that restores mutant p53 protein to wild-type-like conformation and function, reactivating p53-mediated apoptosis. Covalently binds mutant p53, particularly common p53 contact mutations (R175H, R248W, R273H). Phase III in MDS with TP53 mutation; Phase II in multiple solid tumors. TP53 is the top gene loading Factor 8 in this study. Factor 8 captures the pan-cancer driver mutation landscape where TP53 mutation is most prevalent.`},
+
+  {id:'enfortumab', type:'drug', label:'Enfortumab Vedotin', r:9, importance:1,
+   info:'Anti-NECTIN4 ADC. F1/squamous programme. FDA-approved bladder; Phase II HNSC/LUSC.',
+   meta:{target:'NECTIN4', factor:'F1', stage:'FDA-approved+'},
+   tags:['ADC','NECTIN4','squamous','bladder'],
+   kb:`Enfortumab vedotin (EV, Padcev) is an antibody-drug conjugate targeting NECTIN4 with MMAE payload. FDA-approved for urothelial carcinoma — first-line with pembrolizumab and post-platinum monotherapy. In this study, NECTIN4 tops the Factor 1 expression loading list. Factor 1 is the squamous lineage programme causally validated (ATT=-0.129, p=0.028). Factor 1 score could predict NECTIN4 expression and EV eligibility across squamous histologies regardless of tumor type.`},
+
+  {id:'ruxolitinib', type:'drug', label:'Ruxolitinib', r:9, importance:1,
+   info:'JAK1/2 inhibitor. F6/JAK2 amplification. Combines with anti-PD-1 to prevent PD-L1 reinduction.',
+   meta:{target:'JAK1/JAK2', factor:'F6', stage:'FDA-approved (MPD) / Phase II'},
+   tags:['JAK inhibitor','F6','9p24.1'],
+   kb:`Ruxolitinib (Jakafi) inhibits JAK1 and JAK2. FDA-approved for myeloproliferative neoplasms and steroid-refractory graft-vs-host disease. In Factor 6, JAK2 is co-amplified with CD274 at 9p24.1. JAK2 activation transcriptionally upregulates PD-L1 via STAT3, creating a self-reinforcing immune escape loop. Rationale: pembrolizumab (anti-PD-1) + ruxolitinib (JAK2 inhibitor) combination to block both the PD-L1 surface checkpoint and its transcriptional reinduction after checkpoint blockade.`},
+
+  {id:'dabrafenib_tram', type:'drug', label:'Dabrafenib+Trametinib', r:9, importance:1,
+   info:'BRAF V600E + MEK combination. F12/BRAF axis. FDA-approved for melanoma, NSCLC, anaplastic thyroid.',
+   meta:{target:'BRAF V600E + MEK1/2', factor:'F12', stage:'FDA-approved'},
+   tags:['BRAF','MEK','F12','thyroid'],
+   kb:`Dabrafenib + trametinib is the combination of BRAF V600E inhibitor (dabrafenib) and MEK inhibitor (trametinib). FDA-approved for BRAF V600E melanoma, NSCLC, and anaplastic thyroid carcinoma. In Factor 12, BRAF V600E loads on the thyroid differentiation pole. The combination is active in differentiated thyroid cancers with BRAF V600E after radioiodine failure.`},
+
+  {id:'bemcentinib', type:'drug', label:'Bemcentinib', r:8, importance:1,
+   info:'AXL inhibitor. F8/GAS6-AXL axis. Phase I/II in NSCLC, AML.',
+   meta:{target:'AXL', factor:'F8', stage:'Phase I/II'},
+   tags:['AXL','invasion','F8'],
+   kb:`Bemcentinib (BGB324) is a selective AXL receptor tyrosine kinase inhibitor. AXL is activated by GAS6 (CNV-amplified in Factor 8) to promote invasion, EMT, and drug resistance. Phase I/II trials in NSCLC (with erlotinib), AML, and melanoma. In the context of KRAS × F8 DDD synergy (p=0.022), KRAS inhibitor + bemcentinib is a mechanistically rational combination: KRAS inhibitor blocks oncogenic signaling, bemcentinib blocks GAS6-AXL-mediated compensatory invasion and survival pathway.`},
+
+  {id:'alpelisib', type:'drug', label:'Alpelisib', r:8, importance:1,
+   info:'PI3Kα inhibitor. PIK3CA mutation (F6/F15). FDA-approved for ER+ HER2- PIK3CA-mutant breast cancer.',
+   meta:{target:'PI3Kα (PIK3CA)', factor:'F6/F15', stage:'FDA-approved'},
+   tags:['PI3K','PIK3CA','F15','breast cancer'],
+   kb:`Alpelisib (BYL719, Piqray) specifically inhibits the PI3Kα isoform encoded by PIK3CA. FDA-approved with fulvestrant for ER+/HER2-/PIK3CA-mutant advanced breast cancer (SOLAR-1 trial). PIK3CA mutation loads on Factor 6 (positive) and Factor 15 (context of luminal de-differentiation). The Factor 15 causal validation (ATT=-0.285) strengthens the rationale for PI3K pathway targeting in luminal-to-basal de-differentiated tumors.`},
+
+  {id:'nafamostat', type:'drug', label:'Nafamostat', r:7, importance:1,
+   info:'Broad serine protease inhibitor. PRSS3/KLK6 (F8) and TMPRSS2 (F12) axis.',
+   meta:{target:'Serine proteases', factor:'F8/F12', stage:'Clinical (pancreatitis) / Preclinical'},
+   tags:['protease','PRSS3','KLK6','TMPRSS2','F8'],
+   kb:`Nafamostat mesylate is a broad serine protease inhibitor used clinically in Japan and Korea for pancreatitis and DIC. In this study, PRSS3 and KLK6 are top Factor 8 expression loadings — invasion-associated serine proteases. Nafamostat also inhibits TMPRSS2 (Factor 12 loading in thyroid/prostate). Proposed combination: KRAS inhibitor (sotorasib) + nafamostat in KRAS-mutant / Factor-8-high tumors (based on DDD synergy p=0.022).`},
+
+  // ── Models ─────────────────────────────────────────────────
+  {id:'ftt', type:'model', label:'FT-Transformer', r:13, importance:3,
+   info:'Best survival model. C-index 0.751 ± 0.006. Feature Tokenizer + self-attention. ~68K params.',
+   meta:{cindex:'0.751', std:'±0.006', type:'Transformer', features:'50 (MOFA+)'},
+   tags:['best model','transformer','SHAP GradientExplainer'],
+   kb:`The FT-Transformer (Feature Tokenizer Transformer) achieves the best mean C-index of 0.751 ± 0.006 across 5-fold cross-validation. Architecture: per-feature linear embedding (d_token=64), learnable [CLS] token, 2 pre-norm transformer blocks (4 heads, FFN d=256, dropout 0.2), linear risk head. ~68,000 parameters. Training: Breslow Cox partial log-likelihood loss using torch.logcumsumexp for numerical stability. Adam optimizer lr=1e-3, wd=1e-4, ReduceLROnPlateau, early stopping patience=20. Key advantage: self-attention captures non-linear interaction effects between MOFA+ factors and cancer-type covariates. Assigns ~2× weight to Factor 1 vs. tree models, suggesting attention detects squamous-lineage × cancer-type synergies that gradient boosting misses. SHAP computed via shap.GradientExplainer with 200-sample background.`},
+
+  {id:'xgb', type:'model', label:'XGBoost', r:11, importance:2,
+   info:'C-index 0.747 ± 0.008. survival:cox objective. 500 estimators. TreeExplainer SHAP.',
+   meta:{cindex:'0.747', std:'±0.008', type:'Gradient Boosting', features:'50 (MOFA+)'},
+   tags:['XGBoost','Cox objective','TreeExplainer'],
+   kb:`XGBoost with survival:cox objective achieves C-index 0.747 ± 0.008. Config: n_estimators=500, lr=0.05, max_depth=5, subsample=0.8, colsample_bytree=0.8. Negative label encoding for censored observations. SHAP via shap.TreeExplainer (exact, interventional perturbation). Cancer-type dummies receive relatively higher SHAP weight vs. FTT. MOFA+ baseline gain: raw PCA XGBoost = 0.724 ± 0.053; MOFA+ XGBoost = 0.747 ± 0.008 — 7-fold reduction in fold-to-fold variance, confirming MOFA+ biological structure stabilizes predictions.`},
+
+  {id:'lgb', type:'model', label:'LightGBM', r:11, importance:2,
+   info:'C-index 0.745 ± 0.008. Custom Breslow Cox objective (LGB 4.x removed built-in Cox). 600 rounds.',
+   meta:{cindex:'0.745', std:'±0.008', type:'Gradient Boosting', features:'50 (MOFA+)'},
+   tags:['LightGBM','custom Cox','TreeExplainer'],
+   kb:`LightGBM achieves C-index 0.745 ± 0.008. LightGBM 4.x removed the built-in cox objective; a custom Breslow-approximation gradient/Hessian was implemented via params['objective'] API. Survival labels: +OS_time (event), -OS_time (censored). 600 boosting rounds, early stopping patience=30, C-index custom feval metric. SHAP via TreeExplainer. LightGBM assigns Factor 8 the highest SHAP of any individual model (0.293) — stronger F8 sensitivity than XGBoost (0.271) or FTT (0.280).`},
+
+  // ── Methods ────────────────────────────────────────────────
+  {id:'mofa_method', type:'method', label:'MOFA+', r:14, importance:3,
+   info:'Multi-Omics Factor Analysis. 3 views × 7,902 samples → 18 latent factors. mofapy2 v0.7.4.',
+   meta:{views:'3 (expr/mut/CNV)', factors:'18 retained', converged:'iter 71', lib:'mofapy2 v0.7.4'},
+   tags:['factor analysis','multi-omics','Bayesian','ARD'],
+   kb:`MOFA+ (Multi-Omics Factor Analysis v2) learns a low-dimensional latent factor representation shared across multiple omics modalities. Model: data = WZ + noise, with per-view likelihood (Gaussian for continuous, Bernoulli for binary), ARD priors on both factors (sparsity over factors) and weights (sparsity over features), spike-and-slab prior on weights. Three views: expression (1,000 genes, Gaussian), mutations (300 genes, Bernoulli), CNV (1,000 genes, Gaussian). 20 factors requested; ARD pruned 2 → 18 retained. Trained with mofapy2 v0.7.4 (pure Python, no R), convergence at iteration 71 (ELBO Δ < 0.00044%), ELBO: -204M → -5.8M. Key insight: MOFA+ factors substantially outperform raw PCA features as survival model inputs (C-index 0.751 vs. 0.724 baseline; 7-fold lower CV std).`},
+
+  {id:'shap_method', type:'method', label:'SHAP', r:12, importance:2,
+   info:'SHapley Additive exPlanations. GradientExplainer (FTT) + TreeExplainer (XGB/LGB). 50 features × 7,787 samples.',
+   meta:{explainers:'Gradient + Tree', samples:'7,787', features:'50'},
+   tags:['explainability','attribution','factor ranking'],
+   kb:`SHAP (SHapley Additive exPlanations) attributes each prediction to input features using Shapley values from cooperative game theory. For FTT: shap.GradientExplainer with 2D output wrapper and 200-sample background reference. For XGB/LGB: shap.TreeExplainer with interventional feature perturbation (exact computation). Mean |SHAP| per feature per model computed across all 7,787 samples. Factor importance = average across 3 models weighted by inverse inter-model CV. Gene-level attribution: gene_SHAP = Σ |MOFA_weight_ij| × factor_avg_SHAP_j across top-5 factors. Key finding: SHAP importance and variance explained are orthogonal — F8 highest SHAP (0.283) but only 3.2% variance.`},
+
+  {id:'did_method', type:'method', label:'Diff-in-Diff (DiD)', r:12, importance:2,
+   info:'Causal inference layer. Pseudo-panel: cancer_type × AJCC stage. CS, DDD, HonestDiD, TROP, Bacon.',
+   meta:{framework:'Callaway-Sant\'Anna 2021', panel:'20 types × 4 stages', lib:'diff-diff v3.3.2'},
+   tags:['causal inference','staggered DiD','CS estimator'],
+   kb:`The Difference-in-Differences causal inference layer applies the Callaway-Sant'Anna (2021) staggered adoption estimator to a cancer_type × AJCC-stage pseudo-panel (20 cancer types × 4 stages). TCGA is cross-sectional, so patients are aggregated into cells; cancer type = unit, stage = time, treatment = high factor activation (above pan-cancer median). Outcome: z-scored OS time within cancer type. CS estimator uses doubly-robust estimation, never-treated control group, cancer-type-clustered SEs, 999 bootstrap replications. Five analyses: (1) CallawaySantAnna event study × 5 factors; (2) BaconDecomposition — 37% TWFE contamination for F8; (3) TripleDifference — 4 gene-factor pairs; (4) HonestDiD M-grid sweep; (5) TROP nuclear-norm robustness check. Key finding: F6 (ATT=-0.486) and F15 (ATT=-0.285) causally validated; F8 confounded by cancer-type composition.`},
+
+  {id:'honestdid_method', type:'method', label:'HonestDiD', r:10, importance:1,
+   info:'Rambachan-Roth (2023) sensitivity bounds. M-grid {0→1.0}. F8 robustness budget=0; F6/F15 >0.50.',
+   meta:{reference:'Rambachan & Roth 2023', grid:'M ∈ {0,0.05,0.10,0.20,0.50,1.0}'},
+   tags:['sensitivity analysis','parallel trends','robustness'],
+   kb:`HonestDiD (Rambachan & Roth 2023) relaxes the parallel trends assumption by bounding pre-trend violations to M per period. The confidence interval widens with M. The 'robustness budget' is the minimum M at which the CI includes zero. For Factor 8: CI includes zero even at M=0 (exact PT) — budget=0, confirming F8 is confounded. For Factor 6 and Factor 15: CI excludes zero even at M=0.50 — robust to 50% pre-trend violations, a high empirical bar. This confirms F6 and F15 as the primary causally robust findings of the study.`},
+
+  {id:'trop_method', type:'method', label:'TROP', r:9, importance:1,
+   info:'Triply Robust Panel estimator with nuclear-norm factor adjustment. Confirms F6/F15.',
+   meta:{restriction:'first_treat ≥ 3', units:'10 (2 treated, 8 never-treated)'},
+   tags:['robustness','nuclear norm','panel'],
+   kb:`TROP (Triply Robust Panel) applies nuclear-norm matrix factorization to adjust for latent factor confounding in the aggregated panel. Appropriate here since MOFA+ factors are the primary confounders. Restricted to cancer types with first_treat ≥ 3 (≥2 pre-treatment periods required). 10 units available. Results: F6=-0.41 (CS:-0.49); F15=-0.27 (CS:-0.29); F1=-0.11 (CS:-0.13). Directionally consistent, providing independent confirmation of primary findings.`},
+
+  // ── Cancer Types ───────────────────────────────────────────
+  {id:'hnsc', type:'cancer', label:'HNSC', r:9, importance:1,
+   info:'Head & Neck Squamous Cell Carcinoma. F1 dominant. TP63 amplification, DCUN1D1 3q26.3. Event rate 44.8%.',
+   meta:{n:'~500', events:'~224', event_rate:'44.8%', dominant_factor:'F1'},
+   tags:['squamous','F1','TP63','high mortality'],
+   kb:`HNSC (head and neck squamous cell carcinoma) is one of the highest-event-rate cancer types in the TCGA cohort (44.8%). Factor 1 (squamous lineage) is the dominant factor — TP63 amplification, DCUN1D1 3q26.3 amplicon, NECTIN4 overexpression. HPV+ HNSC (oropharyngeal) has better prognosis and lower Factor 1 loading. Key targets: enfortumab vedotin (NECTIN4 ADC, Phase II in HNSC), pevonedistat (DCUN1D1/neddylation inhibitor).`},
+
+  {id:'brca', type:'cancer', label:'BRCA', r:10, importance:1,
+   info:'Breast Invasive Carcinoma. F15 (luminal de-diff) and F9 (B-cell) prominent. n≈1,030 (largest TCGA cohort).',
+   meta:{n:'~1,030', events:'~121', event_rate:'11.7%', dominant_factor:'F15/F9'},
+   tags:['breast cancer','F15','ARID1A','largest cohort'],
+   kb:`BRCA (breast invasive carcinoma) is the largest TCGA cohort (~1,030 samples). Factor 15 captures the luminal-to-basal de-differentiation axis prominent in TNBC and hormone-refractory breast cancers. Factor 9 (B-cell/immunoglobulin infiltration) is also prominent in BRCA. Key mutations: PIK3CA (30%), TP53 (30%), GATA3 (10%), ARID1A (5%). Therapeutic opportunities from this study: tazemetostat (ARID1A-loss TNBC), alpelisib (PIK3CA-mutant ER+), capivasertib (PTEN-null).`},
+
+  {id:'gbm_lgg', type:'cancer', label:'GBM/LGG', r:9, importance:1,
+   info:'Glioblastoma + Low-Grade Glioma. F7 (glioma/neural) and F12 (IDH gradient) dominant. IDH1 split.',
+   meta:{n_lgg:'~510', n_gbm:'~160', dominant_factor:'F7/F12'},
+   tags:['glioma','IDH1','F12/F7','ivosidenib'],
+   kb:`GBM (glioblastoma multiforme, IDH-wild-type) and LGG (low-grade glioma, IDH-mutant) represent the two poles of Factor 12's differentiation gradient. IDH-mutant LGG has much better survival (Factor 12 high = thyroid/IDH-mutant = better outcome). GBM is IDH-wild-type, ATRX-intact, CIC-wild-type — loads on the negative pole of F12. Factor 7 (glioma/astrocyte programme) is also prominent. Therapeutic: ivosidenib for IDH1-mutant glioma (FDA-approved).`},
+
+  {id:'luad', type:'cancer', label:'LUAD', r:9, importance:1,
+   info:'Lung Adenocarcinoma. F8/F12 loaded. KRAS G12C (13%), BRAF V600E (5%). Event rate 35.3%.',
+   meta:{n:'~510', events:'~180', event_rate:'35.3%', dominant_factor:'F8'},
+   tags:['lung','KRAS G12C','F8','sotorasib'],
+   kb:`LUAD (lung adenocarcinoma) has a 35.3% event rate and KRAS G12C mutation in ~13% of tumors — the primary indication for sotorasib. Factor 8 (invasion/drivers) is prominent. BRAF V600E in ~5% (dabrafenib+trametinib approved). EGFR mutations (~20%) are captured as negative BRAF-equivalent loading on Factor 12.`},
+
+  {id:'lusc', type:'cancer', label:'LUSC', r:9, importance:1,
+   info:'Lung Squamous Cell. F1 dominant. DCUN1D1 3q26.3. NECTIN4 overexpression. Event rate 40.4%.',
+   meta:{n:'~490', events:'~198', event_rate:'40.4%', dominant_factor:'F1'},
+   tags:['squamous','F1','DCUN1D1','3q26.3'],
+   kb:`LUSC (lung squamous cell carcinoma) has a 40.4% event rate and is dominated by Factor 1 (squamous lineage programme). DCUN1D1 3q26.3 amplification is present in >60% of LUSC. NECTIN4 is overexpressed — enfortumab vedotin eligibility. No EGFR/ALK/ROS1 drivers; squamous programme is the defining molecular feature.`},
+
+  // ── Results ────────────────────────────────────────────────
+  {id:'cindex', type:'result', label:'Model C-indices', r:11, importance:2,
+   info:'Joint: FTT 0.751, XGB 0.747, LGB 0.745. Expression-only MOFA+ beats joint: FTT 0.762 (+0.011).',
+   meta:{ftt_joint:'0.751 ± 0.006', xgb_joint:'0.747 ± 0.008', ftt_expr:'0.762 ± 0.007 ★', baseline:'0.724 ± 0.053'},
+   tags:['C-index','5-fold CV','performance','ablation'],
+   kb:`Joint 3-modal MOFA+: FT-Transformer C-index 0.751 ± 0.006, XGBoost 0.747 ± 0.008, LightGBM 0.745 ± 0.008. Raw PCA baseline: 0.724 ± 0.053. Modality ablation (key finding): expression-only MOFA+ factors outperform the joint model — FTT 0.762 ± 0.007 (+0.011 vs joint), XGB 0.760 ± 0.009 (+0.013), LGB 0.757 ± 0.010 (+0.012). When all 18 factor dimensions focus on 1,000 continuous Gaussian RNA-seq features, MOFA+ extracts purer prognostic programmes without dilution by sparse binary mutation data (300 genes, Bernoulli) or noisy CNV values. Mutation-only MOFA+: FTT 0.752, XGB 0.740, LGB 0.732. CNV-only: FTT 0.749, XGB 0.742, LGB 0.740. FTT handles mutation-only data far better than trees (+0.020 gap) via self-attention on co-mutation patterns. For raw survival prediction, use expression-only MOFA+. For therapeutic target discovery and causal co-dependency mapping, use joint 3-modal MOFA+.`},
+
+  {id:'ablation_result', type:'result', label:'Modality Ablation', r:12, importance:2,
+   info:'Expr-only MOFA+ beats joint 3-modal by +0.011 C-index (FTT). Mut-only lowest for trees. FTT most robust to sparse data.',
+   meta:{expr_ftt:'0.762 ± 0.007', joint_ftt:'0.751 ± 0.006', mut_ftt:'0.752 ± 0.006', cnv_ftt:'0.749 ± 0.004'},
+   tags:['ablation','modality','expression','RNA-seq','best single modality'],
+   kb:`Modality ablation study comparing four MOFA+ conditions on identical 5-fold CV (random_state=42). Expression-only (1,000 genes, Gaussian): FTT 0.7622, XGB 0.7595, LGB 0.7569 — best on all models, +0.011–0.013 above joint. Joint 3-modal: FTT 0.7512, XGB 0.7465, LGB 0.7451. Mutation-only (300 genes, Bernoulli): FTT 0.7520, XGB 0.7402, LGB 0.7317. CNV-only (1,000 genes, Gaussian): FTT 0.7493, XGB 0.7424, LGB 0.7400. Key mechanistic explanation: expression is continuous, high-dimensional, Gaussian — MOFA+ decomposes it most faithfully. Joint model shares factor capacity across three views, diluting the expression signal. However joint model enables: (1) Factor 8 mutation loadings identifying KRAS co-dependency (DDD p=0.022); (2) Factor 6 CNV loadings identifying 9p24.1 amplicon; (3) causal DiD using mutation data as treatment partitions in Triple Difference. FTT self-attention advantage on mutation-only data: +0.020 gap vs XGB/LGB, the largest model architecture gap of any condition. CNV-only has lowest fold-to-fold variability (std 0.004 FTT) — most stable signal.`},
+
+  {id:'shap_result', type:'result', label:'SHAP Ranking', r:11, importance:2,
+   info:'F8=0.283, F6=0.219, F1=0.162, F15=0.120, F12=0.120. Orthogonal to variance explained.',
+   meta:{f8:'0.283', f6:'0.219', f1:'0.162', f15:'0.120', f12:'0.120'},
+   tags:['SHAP ranking','factor importance','top-5'],
+   kb:`SHAP factor ranking (avg |SHAP| across FTT, XGB, LGB): F8=0.283 (var 3.2%), F6=0.219 (var 0.8%), F1=0.162 (var 6.1%), F15=0.120 (var 2.5%), F12=0.120 (var 5.3%). Key insight: SHAP importance and variance explained are orthogonal properties of latent factors. F8 has the highest survival prediction power yet explains the least cross-modal variance — underscoring that prognostic factors need not be the largest sources of variation, only the most consistent and survival-informative ones. Factor 8 inter-model CV = 0.031 (lowest), confirming it is discovered independently by all three architectures.`},
+
+  {id:'att_result', type:'result', label:'DiD ATT Estimates', r:11, importance:2,
+   info:'F6: ATT=−0.486 p<10⁻¹². F15: ATT=−0.285 p<10⁻¹⁷. F1: ATT=−0.129 p=0.028. F8: confounded.',
+   meta:{f6:'-0.486 p<0.001', f15:'-0.285 p<0.001', f1:'-0.129 p=0.028', f8:'+0.298 p=0.134'},
+   tags:['causal ATT','CS DiD','causal validation'],
+   kb:`Callaway-Sant'Anna ATT estimates on cancer_type × stage pseudo-panel: Factor 6 (9p24.1 immune checkpoint): ATT=-0.486, SE=0.067, p<10⁻¹². Factor 15 (luminal de-diff): ATT=-0.285, SE=0.033, p<10⁻¹⁷. Factor 1 (squamous): ATT=-0.129, SE=0.059, p=0.028. Factor 12 (thyroid/IDH): ATT=-0.026, SE=0.059, p=0.652 (not significant). Factor 8 (invasion/drivers): ATT=+0.298, SE=0.198, p=0.134 (not significant — confounded by cancer-type composition). Negative ATT = high factor activation causally reduces z-scored OS time within cancer type. F6 and F15 are the primary causally validated therapeutic targets.`},
+
+  {id:'ddd_result', type:'result', label:'DDD Synergy', r:10, importance:1,
+   info:'KRAS×F8: DDD=−0.472, p=0.022. The only significant gene-factor co-dependency.',
+   meta:{kras_f8:'-0.472 p=0.022 ✓', tp53_f8:'-0.075 p=0.627', pik3ca_f15:'-0.213 p=0.267', braf_f12:'+0.062 p=0.868'},
+   tags:['Triple Difference','KRAS','synergy','combination therapy'],
+   kb:`Triple Difference (DDD) results for 4 gene-factor co-dependency pairs: KRAS × Factor 8: DDD=-0.472, SE=0.208, p=0.022 — SIGNIFICANT. This indicates that co-occurrence of KRAS mutation and high Factor 8 activation causes a survival detriment significantly greater than either alone, representing a synergistic co-dependency. TP53 × Factor 8: DDD=-0.075, p=0.627 (not significant). PIK3CA × Factor 15: DDD=-0.213, p=0.267 (not significant). BRAF × Factor 12: DDD=+0.062, p=0.868 (not significant). Clinical implication: KRAS inhibitor (sotorasib/adagrasib) + invasion-targeting agent (nafamostat, bemcentinib) as highest-priority combination in KRAS-mutant solid tumors.`},
+];
+
+const EDGES = [
+  // Factor → Gene
+  {s:'f8',  t:'tp53',   rel:'loads (mutation)', w:3},
+  {s:'f8',  t:'kras',   rel:'loads (mutation)', w:3},
+  {s:'f8',  t:'idh1',   rel:'loads (mutation)', w:2},
+  {s:'f8',  t:'prss3',  rel:'top expression',   w:3},
+  {s:'f8',  t:'gas6',   rel:'CNV amplified',    w:2},
+  {s:'f6',  t:'cd274',  rel:'CNV amplified',    w:3},
+  {s:'f6',  t:'pik3ca', rel:'loads (mutation)', w:2},
+  {s:'f1',  t:'tp63',   rel:'top expression',   w:3},
+  {s:'f1',  t:'nectin4',rel:'top expression',   w:3},
+  {s:'f15', t:'arid1a', rel:'loads (mut loss)',  w:3},
+  {s:'f15', t:'pten',   rel:'loads (mut loss)',  w:2},
+  {s:'f15', t:'kmt2c',  rel:'loads (mut loss)',  w:2},
+  {s:'f15', t:'pik3ca', rel:'loads (mutation)', w:2},
+  {s:'f12', t:'braf',   rel:'loads (mutation)', w:2},
+  {s:'f12', t:'idh1',   rel:'loads (mutation)', w:2},
+  // Gene → Drug
+  {s:'tp53',   t:'apr246',       rel:'TP53 reactivator', w:3},
+  {s:'kras',   t:'sotorasib',    rel:'KRAS G12C inhibitor', w:3},
+  {s:'idh1',   t:'ivosidenib',   rel:'IDH1 inhibitor', w:3},
+  {s:'cd274',  t:'pembrolizumab',rel:'PD-1/PD-L1 axis', w:3},
+  {s:'cd274',  t:'ruxolitinib',  rel:'JAK2 co-amp combo', w:2},
+  {s:'arid1a', t:'tazemetostat', rel:'EZH2 synthetic lethality', w:3},
+  {s:'pten',   t:'alpelisib',    rel:'PI3K pathway', w:2},
+  {s:'pik3ca', t:'alpelisib',    rel:'PI3Kα inhibitor', w:3},
+  {s:'braf',   t:'dabrafenib_tram',rel:'BRAF V600E inhibitor', w:3},
+  {s:'nectin4',t:'enfortumab',   rel:'ADC target', w:3},
+  {s:'gas6',   t:'bemcentinib',  rel:'AXL inhibitor', w:3},
+  {s:'prss3',  t:'nafamostat',   rel:'serine protease inhibitor', w:3},
+  {s:'kmt2c',  t:'tazemetostat', rel:'chromatin synthetic lethality', w:2},
+  // Model → Factor (SHAP)
+  {s:'ftt',  t:'f8',   rel:'SHAP #1 (0.280)', w:3},
+  {s:'ftt',  t:'f6',   rel:'SHAP #2 (0.219)', w:2},
+  {s:'ftt',  t:'f1',   rel:'SHAP #3 (0.245)', w:2},
+  {s:'xgb',  t:'f8',   rel:'SHAP #1 (0.271)', w:2},
+  {s:'xgb',  t:'f6',   rel:'SHAP #2 (0.218)', w:2},
+  {s:'lgb',  t:'f8',   rel:'SHAP #1 (0.293)', w:2},
+  {s:'lgb',  t:'f15',  rel:'SHAP #4', w:2},
+  // Method → Factor
+  {s:'mofa_method',  t:'f8',  rel:'factor output', w:3},
+  {s:'mofa_method',  t:'f6',  rel:'factor output', w:3},
+  {s:'mofa_method',  t:'f1',  rel:'factor output', w:3},
+  {s:'mofa_method',  t:'f15', rel:'factor output', w:3},
+  {s:'mofa_method',  t:'f12', rel:'factor output', w:2},
+  {s:'shap_method',  t:'shap_result', rel:'computes', w:2},
+  {s:'did_method',   t:'att_result',  rel:'estimates', w:3},
+  {s:'honestdid_method', t:'att_result', rel:'sensitivity for F8', w:2},
+  {s:'trop_method',  t:'att_result',  rel:'robustness check', w:2},
+  // Factor ↔ Result
+  {s:'f8',  t:'shap_result', rel:'SHAP=0.283 rank1', w:3},
+  {s:'f6',  t:'shap_result', rel:'SHAP=0.219 rank2', w:2},
+  {s:'f6',  t:'att_result',  rel:'ATT=-0.486 ✓', w:3},
+  {s:'f15', t:'att_result',  rel:'ATT=-0.285 ✓', w:3},
+  {s:'f8',  t:'att_result',  rel:'ATT=+0.298 confounded', w:2},
+  {s:'f1',  t:'att_result',  rel:'ATT=-0.129 ✓', w:2},
+  {s:'kras', t:'ddd_result', rel:'KRAS×F8 DDD=-0.472 p=0.022', w:3},
+  {s:'f8',   t:'ddd_result', rel:'KRAS×F8 synergy', w:3},
+  // Cancer types → Factors
+  {s:'hnsc', t:'f1',  rel:'F1 dominant', w:2},
+  {s:'lusc', t:'f1',  rel:'F1 dominant', w:2},
+  {s:'brca', t:'f15', rel:'F15 prominent', w:2},
+  {s:'luad', t:'f8',  rel:'F8/KRAS', w:2},
+  {s:'gbm_lgg', t:'f12', rel:'IDH gradient', w:2},
+  // Models → C-index result
+  {s:'ftt', t:'cindex', rel:'C-index 0.751', w:3},
+  {s:'xgb', t:'cindex', rel:'C-index 0.747', w:2},
+  {s:'lgb', t:'cindex', rel:'C-index 0.745', w:2},
+  // Ablation edges
+  {s:'mofa_method', t:'ablation_result', rel:'expr-only factors', w:2},
+  {s:'ftt',         t:'ablation_result', rel:'best C-index 0.762', w:3},
+  {s:'xgb',         t:'ablation_result', rel:'C-index 0.760', w:2},
+  {s:'lgb',         t:'ablation_result', rel:'C-index 0.757', w:2},
+  {s:'ablation_result', t:'cindex', rel:'expression-only best', w:3},
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  Q&A ENGINE
+// ═══════════════════════════════════════════════════════════════
+let apiKey = null;
+
+function setApiKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (v.startsWith('sk-ant')) {
+    apiKey = v;
+    document.getElementById('apiStatus').style.display = 'inline';
+  } else {
+    alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
+  }
+}
+
+const STOP_WORDS = new Set(['what','is','are','the','a','an','how','does','which','tell','me','about','for','in','on','at','to','and','or','do','can','show','why','when','where','was','were','has','have','from','that','this','with','give','find','list','explain','describe','all','any','of','its','by','my']);
+
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s+\-\.]/g, ' ').split(/\s+/).filter(t => t.length > 1 && !STOP_WORDS.has(t));
+}
+
+const ALIASES = {
+  'pd-l1':'cd274','pd1':'pembrolizumab','checkpoint':'f6','immune':'f6',
+  'factor8':'f8','factor6':'f6','factor1':'f1','factor15':'f15','factor12':'f12',
+  'f8':'f8','f6':'f6','f1':'f1','f15':'f15','f12':'f12',
+  'invasion':'f8','squamous':'f1','luminal':'f15','thyroid':'f12',
+  'transformer':'ftt','xgboost':'xgb','lightgbm':'lgb',
+  'mofa':'mofa_method','shap':'shap_method','did':'did_method','diff-in-diff':'did_method','ddd':'ddd_result',
+  'att':'att_result','causal':'did_method','honestdid':'honestdid_method','trop':'trop_method',
+  'cindex':'cindex','c-index':'cindex','concordance':'cindex',
+  'brca':'brca','hnsc':'hnsc','luad':'luad','lusc':'lusc','glioma':'gbm_lgg','glioblastoma':'gbm_lgg',
+  'arp246':'apr246','eprenetapopt':'apr246',
+  'enfortumab':'enfortumab','vedotin':'enfortumab',
+  'pembrolizumab':'pembrolizumab','nivolumab':'pembrolizumab','keytruda':'pembrolizumab',
+  'sotorasib':'sotorasib','adagrasib':'sotorasib','kras':'kras',
+  'ivosidenib':'ivosidenib','idh1':'idh1','idh':'idh1',
+  'tazemetostat':'tazemetostat','ezh2':'tazemetostat','arid1a':'arid1a',
+  'dabrafenib':'dabrafenib_tram','trametinib':'dabrafenib_tram','braf':'braf',
+  'alpelisib':'alpelisib','pik3ca':'pik3ca','pi3k':'alpelisib',
+  'bemcentinib':'bemcentinib','axl':'bemcentinib','gas6':'gas6',
+  'nafamostat':'nafamostat','protease':'prss3','serine':'prss3',
+  'tp53':'tp53','p53':'tp53','ras':'kras','pten':'pten','kmt2c':'kmt2c','kmt2d':'kmt2c',
+  'tp63':'tp63','nectin4':'nectin4','nectin':'nectin4',
+  'validation':'att_result','validated':'att_result','validate':'att_result',
+  'synergy':'ddd_result','synthetic':'arid1a','lethality':'arid1a',
+  'drug':'drug','drugs':'drug','therapy':'drug','therapies':'drug','treatment':'drug',
+  'result':'cindex','results':'cindex','performance':'cindex',
+  'cancer':'brca','tumor':'f8','tumour':'f8',
+  'ablation':'ablation_result','modality':'ablation_result','modalities':'ablation_result',
+  'expression only':'ablation_result','expr only':'ablation_result','rna-seq only':'ablation_result',
+  'mutation only':'ablation_result','cnv only':'ablation_result','single modality':'ablation_result',
+  'best modality':'ablation_result','which modality':'ablation_result',
+};
+
+const NODE_MAP = {};
+NODES.forEach(n => { NODE_MAP[n.id] = n; });
+
+function findMatchingNodes(tokens) {
+  const matched = new Set();
+  tokens.forEach(tok => {
+    const alias = ALIASES[tok];
+    if (alias && NODE_MAP[alias]) matched.add(alias);
+    NODES.forEach(n => {
+      if (n.label.toLowerCase().includes(tok)) matched.add(n.id);
+      if (n.tags.some(t => t.toLowerCase().includes(tok))) matched.add(n.id);
+      if (n.id.includes(tok)) matched.add(n.id);
+    });
+  });
+  return [...matched];
+}
+
+function scoreNode(n, tokens) {
+  let score = 0;
+  const text = (n.label + ' ' + n.info + ' ' + n.tags.join(' ') + ' ' + n.kb).toLowerCase();
+  tokens.forEach(t => { score += (text.match(new RegExp(t,'g'))||[]).length; });
+  return score;
+}
+
+function buildEmbeddedAnswer(query, matchedIds) {
+  const tokens = tokenize(query);
+  const q = query.toLowerCase();
+
+  // Gather nodes to synthesize from
+  const candidates = matchedIds.length > 0
+    ? matchedIds.map(id => NODE_MAP[id]).filter(Boolean)
+    : NODES.sort((a,b) => scoreNode(b,tokens) - scoreNode(a,tokens)).slice(0,4);
+
+  if (candidates.length === 0) return {
+    text: "I don't have specific information about that in the knowledge base. Try asking about a specific MOFA+ factor (F1, F6, F8, F12, F15), a gene (KRAS, TP53, ARID1A), a drug (sotorasib, tazemetostat), a model (FTT, XGBoost), a method (MOFA+, SHAP, DiD), or a result (C-index, ATT estimates, DDD).",
+    nodes: []
+  };
+
+  // Intent detection
+  const isCompare = /compar|versus|vs\.?|better|differ|between/i.test(q);
+  const isDrug = /drug|therap|treat|target|inhibit|approv/i.test(q);
+  const isCausal = /caus|did|diD|validat|att|confounde?d?|parallel|honest|trop/i.test(q);
+  const isModel = /model|cindex|c-index|concordance|transformer|xgb|lgb|lightgbm/i.test(q);
+  const isResult = /result|finding|show|output/i.test(q);
+
+  let answer = '';
+
+  if (isCompare && candidates.length >= 2) {
+    answer = `**Comparison: ${candidates.map(n=>n.label).join(' vs. ')}**\n\n`;
+    candidates.forEach(n => {
+      answer += `**${n.label}** — ${n.info}\n`;
+      if (n.meta) {
+        const parts = Object.entries(n.meta).slice(0,4).map(([k,v]) => `${k}: ${v}`).join(', ');
+        answer += `_(${parts})_\n`;
+      }
+      answer += '\n';
+    });
+  } else {
+    // Primary node deep-dive
+    const primary = candidates[0];
+    answer = `**${primary.label}**\n\n${primary.kb}\n`;
+    if (candidates.length > 1) {
+      answer += `\n**Related:** ${candidates.slice(1).map(n=>`*${n.label}* — ${n.info.slice(0,80)}…`).join('; ')}`;
+    }
+  }
+
+  if (isCausal && !answer.includes('ATT')) {
+    const attNode = NODE_MAP['att_result'];
+    if (attNode) answer += `\n\n**Causal Summary:** ${attNode.info}`;
+  }
+
+  return { text: answer, nodes: candidates };
+}
+
+async function callClaudeAPI(query, context) {
+  const system = `You are an expert assistant for a pan-cancer multiomics research project. Answer questions using ONLY the provided context. Be precise, cite specific numbers. Use **bold** for key terms and numbers.
+
+Context from knowledge graph:
+${context}`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: 600,
+      system,
+      messages: [{ role: 'user', content: query }]
+    })
+  });
+  if (!resp.ok) throw new Error(`API error ${resp.status}`);
+  const data = await resp.json();
+  return data.content[0].text;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FORCE-DIRECTED GRAPH
+// ═══════════════════════════════════════════════════════════════
+let nodes, edges, sim, canvas;
+let highlightIds = new Set();
+let selectedId = null;
+let visibleTypes = new Set(['factor','gene','drug','model','method','cancer','result','concept']);
+let zoom = 1, panX = 0, panY = 0;
+let isDragging = false, dragNode = null, dragOffX = 0, dragOffY = 0;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartPX = 0, panStartPY = 0;
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function initGraph() {
+  const panel = document.getElementById('graphPanel');
+  const W = panel.clientWidth, H = panel.clientHeight;
+
+  // Cluster initial positions
+  const CLUSTER = {
+    factor: {x: W*0.38, y: H*0.38},
+    gene:   {x: W*0.60, y: H*0.32},
+    drug:   {x: W*0.80, y: H*0.55},
+    model:  {x: W*0.20, y: H*0.55},
+    method: {x: W*0.20, y: H*0.28},
+    cancer: {x: W*0.60, y: H*0.68},
+    result: {x: W*0.42, y: H*0.72},
+    concept:{x: W*0.50, y: H*0.50}
+  };
+
+  nodes = NODES.map(n => {
+    const c = CLUSTER[n.type] || {x: W/2, y: H/2};
+    return {
+      ...n,
+      x: c.x + (Math.random()-0.5)*120,
+      y: c.y + (Math.random()-0.5)*120,
+      vx: 0, vy: 0
+    };
+  });
+
+  edges = EDGES.map(e => ({
+    ...e,
+    source: nodes.find(n=>n.id===e.s),
+    target: nodes.find(n=>n.id===e.t)
+  })).filter(e => e.source && e.target);
+
+  renderSVG();
+  runSim();
+}
+
+function runSim() {
+  let alpha = 1;
+  function tick() {
+    if (alpha < 0.005) return;
+    alpha *= 0.97;
+    const panel = document.getElementById('graphPanel');
+    const W = panel.clientWidth, H = panel.clientHeight;
+
+    // Repulsion
+    for (let i=0; i<nodes.length; i++) {
+      for (let j=i+1; j<nodes.length; j++) {
+        const a=nodes[i], b=nodes[j];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const d=Math.sqrt(dx*dx+dy*dy)||1;
+        const f = 4000 / (d*d);
+        const fx=dx/d*f, fy=dy/d*f;
+        a.vx-=fx; a.vy-=fy;
+        b.vx+=fx; b.vy+=fy;
+      }
+    }
+    // Springs
+    edges.forEach(e => {
+      if (!e.source||!e.target) return;
+      const dx=e.target.x-e.source.x, dy=e.target.y-e.source.y;
+      const d=Math.sqrt(dx*dx+dy*dy)||1;
+      const target_d = 120 + (e.source.r||8) + (e.target.r||8);
+      const f=(d-target_d)*0.03*e.w;
+      const fx=dx/d*f, fy=dy/d*f;
+      e.source.vx+=fx; e.source.vy+=fy;
+      e.target.vx-=fx; e.target.vy-=fy;
+    });
+    // Center gravity
+    nodes.forEach(n => {
+      n.vx += (W/2-n.x)*0.002;
+      n.vy += (H/2-n.y)*0.002;
+      n.vx *= 0.85; n.vy *= 0.85;
+      n.x += n.vx*alpha;
+      n.y += n.vy*alpha;
+      n.x = Math.max(n.r+10, Math.min(W-n.r-10, n.x));
+      n.y = Math.max(n.r+10, Math.min(H-n.r-10, n.y));
+    });
+
+    renderSVG();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function worldToScreen(x,y) {
+  return {x: x*zoom + panX, y: y*zoom + panY};
+}
+function screenToWorld(x,y) {
+  return {x: (x-panX)/zoom, y: (y-panY)/zoom};
+}
+
+function renderSVG() {
+  const svg = document.getElementById('graph');
+  if (!svg) return;
+  const W = svg.clientWidth||800, H = svg.clientHeight||600;
+
+  // Build SVG string
+  let edgesSVG = '';
+  edges.forEach(e => {
+    if (!e.source||!e.target) return;
+    const s = e.source, t = e.target;
+    const sVis = visibleTypes.has(s.type) && visibleTypes.has(t.type);
+    if (!sVis) return;
+    const sx=s.x*zoom+panX, sy=s.y*zoom+panY;
+    const tx=t.x*zoom+panX, ty=t.y*zoom+panY;
+    const isHL = highlightIds.has(s.id) && highlightIds.has(t.id);
+    const isSel = selectedId===s.id || selectedId===t.id;
+    const stroke = isHL ? '#c8b96e' : isSel ? '#888' : '#ccc';
+    const opacity = highlightIds.size>0 ? (isHL?0.9:0.15) : (isSel?0.7:0.3);
+    const sw = isHL ? 2.5 : isSel ? 1.5 : 1;
+    edgesSVG += `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" stroke="${stroke}" stroke-width="${sw}" opacity="${opacity}" data-rel="${e.rel}"/>`;
+  });
+
+  let nodesSVG = '';
+  nodes.forEach(n => {
+    if (!visibleTypes.has(n.type)) return;
+    const {x,y} = {x: n.x*zoom+panX, y: n.y*zoom+panY};
+    const r = (n.r||8)*Math.sqrt(zoom);
+    const isHL = highlightIds.has(n.id);
+    const isSel = selectedId===n.id;
+    const dimmed = highlightIds.size>0 && !isHL;
+    const col = TYPE_COLOR[n.type]||'#555';
+    const bg  = TYPE_BG[n.type]||'#eee';
+    const strokeW = isSel ? 3 : isHL ? 2.5 : 1.5;
+    const strokeC = isSel ? '#c8b96e' : isHL ? col : col;
+    const fillOp = dimmed ? 0.25 : 1;
+    const fs = Math.max(7, 9*Math.sqrt(zoom));
+    nodesSVG += `<g class="node-g" data-id="${n.id}" style="cursor:pointer">
+      <circle cx="${x}" cy="${y}" r="${r}" fill="${bg}" stroke="${strokeC}" stroke-width="${strokeW}" opacity="${fillOp}"/>
+      ${isSel||isHL ? `<circle cx="${x}" cy="${y}" r="${r+4}" fill="none" stroke="${col}" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>` : ''}
+      <text x="${x}" y="${y+r+fs+1}" text-anchor="middle" font-family="Courier New,monospace" font-size="${fs}" fill="${col}" opacity="${fillOp}" font-weight="${isHL||isSel?700:400}">${n.label}</text>
+    </g>`;
+  });
+
+  svg.innerHTML = `<g id="graph-root">${edgesSVG}${nodesSVG}</g>`;
+
+  // Attach events
+  svg.querySelectorAll('.node-g').forEach(g => {
+    g.addEventListener('click', e => { e.stopPropagation(); selectNode(g.dataset.id); });
+    g.addEventListener('mouseenter', e => showTooltip(g.dataset.id, e));
+    g.addEventListener('mouseleave', hideTooltip);
+    g.addEventListener('mousedown', e => startDragNode(g.dataset.id, e));
+  });
+}
+
+function selectNode(id) {
+  selectedId = selectedId===id ? null : id;
+  const n = NODE_MAP[id];
+  if (n && selectedId) showNodeDetail(n);
+  else closeDetail();
+  renderSVG();
+}
+
+function showTooltip(id, e) {
+  const n = NODE_MAP[id];
+  if (!n) return;
+  const tip = document.getElementById('tooltip');
+  tip.style.display = 'block';
+  tip.textContent = `${n.label}\n${n.info}`;
+  const panel = document.getElementById('graphPanel');
+  const rect = panel.getBoundingClientRect();
+  tip.style.left = (e.clientX - rect.left + 12) + 'px';
+  tip.style.top  = (e.clientY - rect.top  + 12) + 'px';
+}
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+function showNodeDetail(n) {
+  const det = document.getElementById('nodeDetail');
+  det.classList.remove('hidden');
+  const col = TYPE_COLOR[n.type]||'#555', bg = TYPE_BG[n.type]||'#eee';
+  document.getElementById('ndLeft').innerHTML = `
+    <div class="nd-type" style="background:${bg};color:${col}">${n.type.toUpperCase()}</div>
+    <div class="nd-title">${n.label}</div>
+    <div class="nd-body" style="margin-top:4px">${n.info}</div>
+    <div class="nd-tags">${n.tags.map(t=>`<span class="nd-tag" style="background:${bg};color:${col};border:1px solid ${col}">${t}</span>`).join('')}</div>`;
+  const meta = n.meta||{};
+  document.getElementById('ndMeta').innerHTML = Object.entries(meta).map(([k,v])=>`
+    <div class="nd-meta-item"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+}
+function closeDetail() {
+  document.getElementById('nodeDetail').classList.add('hidden');
+  selectedId = null;
+  renderSVG();
+}
+
+function toggleFilter(type) {
+  const chip = document.getElementById('fc-'+type);
+  if (visibleTypes.has(type)) { visibleTypes.delete(type); chip.classList.add('off'); }
+  else { visibleTypes.add(type); chip.classList.remove('off'); }
+  renderSVG();
+}
+
+function searchGraph(q) {
+  if (!q.trim()) { highlightIds.clear(); renderSVG(); return; }
+  const tokens = tokenize(q);
+  const matched = findMatchingNodes(tokens);
+  // Also match neighbors
+  const expanded = new Set(matched);
+  edges.forEach(e => {
+    if (expanded.has(e.s)) expanded.add(e.t);
+    if (expanded.has(e.t)) expanded.add(e.s);
+  });
+  highlightIds = expanded;
+  renderSVG();
+}
+
+// Pan + zoom
+document.addEventListener('DOMContentLoaded', () => {
+  const svg = document.getElementById('graph');
+  svg.addEventListener('mousedown', e => {
+    if (!dragNode) {
+      isPanning = true;
+      panStartX = e.clientX; panStartY = e.clientY;
+      panStartPX = panX; panStartPY = panY;
+    }
+  });
+  document.addEventListener('mousemove', e => {
+    if (isPanning) {
+      panX = panStartPX + (e.clientX - panStartX);
+      panY = panStartPY + (e.clientY - panStartY);
+      renderSVG();
+    }
+    if (dragNode) {
+      const panel = document.getElementById('graphPanel');
+      const rect = panel.getBoundingClientRect();
+      const wx = (e.clientX - rect.left - panX) / zoom;
+      const wy = (e.clientY - rect.top  - panY) / zoom;
+      dragNode.x = wx + dragOffX;
+      dragNode.y = wy + dragOffY;
+      renderSVG();
+    }
+    if (e.target && e.target.closest && e.target.closest('.node-g')) {
+      const id = e.target.closest('.node-g').dataset.id;
+      if (id) showTooltip(id, e);
+    }
+  });
+  document.addEventListener('mouseup', () => { isPanning = false; dragNode = null; });
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const panel = document.getElementById('graphPanel');
+    const rect = panel.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const dz = e.deltaY > 0 ? 0.9 : 1.1;
+    panX = mx - (mx - panX)*dz;
+    panY = my - (my - panY)*dz;
+    zoom = Math.max(0.3, Math.min(3, zoom*dz));
+    renderSVG();
+  }, {passive:false});
+  svg.addEventListener('click', e => {
+    if (!e.target.closest('.node-g')) { selectedId=null; closeDetail(); }
+  });
+  initGraph();
+});
+
+function startDragNode(id, e) {
+  e.preventDefault();
+  const n = nodes.find(nd=>nd.id===id);
+  if (!n) return;
+  dragNode = n;
+  const panel = document.getElementById('graphPanel');
+  const rect = panel.getBoundingClientRect();
+  const wx = (e.clientX - rect.left - panX)/zoom;
+  const wy = (e.clientY - rect.top  - panY)/zoom;
+  dragOffX = n.x - wx;
+  dragOffY = n.y - wy;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Q&A UI
+// ═══════════════════════════════════════════════════════════════
+function askSuggestion(btn) {
+  document.getElementById('qaInput').value = btn.textContent;
+  submitQuestion();
+}
+
+function handleKey(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); submitQuestion(); }
+}
+
+function addMessage(role, html, sourceNodes) {
+  const container = document.getElementById('qaMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (role==='user') {
+    div.textContent = html;
+  } else {
+    // Convert simple markdown
+    const formatted = html
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+    let src = '';
+    if (sourceNodes && sourceNodes.length>0) {
+      const chips = sourceNodes.map(n => {
+        const col = TYPE_COLOR[n.type]||'#555', bg = TYPE_BG[n.type]||'#eee';
+        return `<span class="src-chip" style="background:${bg};color:${col};border-color:${col}" onclick="focusNode('${n.id}')">${n.label}</span>`;
+      }).join('');
+      src = `<div class="sources"><div class="src-label">Sources from knowledge graph</div><div class="src-chips">${chips}</div></div>`;
+    }
+    div.innerHTML = `<div class="ans-body">${formatted}</div>${src}`;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function showThinking() {
+  const container = document.getElementById('qaMessages');
+  const div = document.createElement('div');
+  div.className = 'thinking';
+  div.innerHTML = 'Searching knowledge graph<span>.</span><span>.</span><span>.</span>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function focusNode(id) {
+  selectedId = id;
+  const n = NODE_MAP[id];
+  if (n) { showNodeDetail(n); highlightIds = new Set([id]); }
+  edges.forEach(e => {
+    if (e.s===id || e.t===id) { highlightIds.add(e.s); highlightIds.add(e.t); }
+  });
+  renderSVG();
+  // Pan to node
+  const node = nodes.find(n=>n.id===id);
+  if (node) {
+    const panel = document.getElementById('graphPanel');
+    panX = panel.clientWidth/2  - node.x*zoom;
+    panY = panel.clientHeight/2 - node.y*zoom;
+    renderSVG();
+  }
+}
+
+async function submitQuestion() {
+  const input = document.getElementById('qaInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+
+  // Remove suggestion buttons
+  const sugg = document.getElementById('suggestions');
+  if (sugg) sugg.style.display = 'none';
+
+  addMessage('user', q);
+  const thinking = showThinking();
+
+  const tokens = tokenize(q);
+  const matchedIds = findMatchingNodes(tokens);
+
+  // Highlight graph
+  const expanded = new Set(matchedIds);
+  edges.forEach(e => {
+    if (expanded.has(e.s)) expanded.add(e.t);
+    if (expanded.has(e.t)) expanded.add(e.s);
+  });
+  highlightIds = expanded;
+  renderSVG();
+
+  try {
+    let answerText, answerNodes;
+
+    if (apiKey) {
+      // Build context from matched nodes
+      const contextNodes = matchedIds.length>0
+        ? matchedIds.map(id=>NODE_MAP[id]).filter(Boolean).slice(0,5)
+        : NODES.sort((a,b)=>scoreNode(b,tokens)-scoreNode(a,tokens)).slice(0,5);
+      answerNodes = contextNodes;
+      const context = contextNodes.map(n =>
+        `[${n.label} (${n.type})]\n${n.kb}\nKey metrics: ${JSON.stringify(n.meta)}`
+      ).join('\n\n---\n\n');
+      answerText = await callClaudeAPI(q, context);
+    } else {
+      const result = buildEmbeddedAnswer(q, matchedIds);
+      answerText = result.text;
+      answerNodes = result.nodes;
+    }
+
+    thinking.remove();
+    addMessage('assistant', answerText, answerNodes);
+  } catch(err) {
+    thinking.remove();
+    addMessage('assistant', `Error: ${err.message}. Check your API key or try again.`, []);
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+</script>
+</body>
+</html>

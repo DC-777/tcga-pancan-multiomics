@@ -1,6 +1,6 @@
 # TCGA Pan-Cancer Multiomics Survival Analysis
 
-> **Identifying therapeutic targets from pan-cancer multiomics data using MOFA+ factor analysis, gradient-boosting survival models, and SHAP attribution**
+> **Identifying therapeutic targets from pan-cancer multiomics data using MOFA+ factor analysis, gradient-boosting survival models, SHAP attribution, modality ablation, and diff-diff causal inference**
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -13,10 +13,12 @@ This project builds a full end-to-end pipeline that:
 
 1. **Downloads** the TCGA Pan-Cancer Atlas (33 cancer types, ~11 000 patients) from UCSC Xena
 2. **Decomposes** three omics modalities — gene expression, somatic mutations, copy-number variation — into 18 interpretable factors using **MOFA+**
-3. **Predicts overall survival** with three models: Feature Tabular Transformer (**FTT**), **XGBoost**, and **LightGBM** (best C-index: **0.7512**)
+3. **Predicts overall survival** with three models: Feature Tabular Transformer (**FTT**), **XGBoost**, and **LightGBM** (best C-index: **0.7622** — expression-only MOFA+)
 4. **Attributes** model predictions to MOFA+ factors using **SHAP**, then traces factors back to individual genes
-5. **Nominates therapeutic targets** with actionability annotations and drug-mechanism mapping
-6. **Delivers** results as a self-contained interactive HTML dashboard, two Word manuscripts, and publication-ready figures
+5. **Ablates** the modality contribution: expression-only vs. mutation-only vs. CNV-only vs. joint 3-modal factors
+6. **Validates causality** with `diff-diff` staggered DiD, Triple Difference synthetic lethality, HonestDiD, and TROP
+7. **Nominates therapeutic targets** with actionability annotations and drug-mechanism mapping
+8. **Delivers** results as a self-contained interactive HTML dashboard (8 panels), two Word manuscripts, and publication-ready figures
 
 ### Key findings
 
@@ -28,7 +30,30 @@ This project builds a full end-to-end pipeline that:
 | **Factor15** | Luminal de-differentiation (GATA3↓, PTEN/ARID1A mut) | 0.1197 | 2.5 % | Alpelisib, tazemetostat |
 | **Factor12** | Thyroid (BRAF V600E) vs. IDH-mutant glioma axis | 0.1196 | 5.3 % | Dabrafenib+trametinib, ivosidenib |
 
-> **Key insight:** Prognostic relevance (SHAP) and variance explained by a MOFA+ factor are orthogonal. Factor8 carries the highest survival signal despite explaining the least variance — underscoring the need for SHAP-guided factor selection rather than variance-based cutoffs.
+> **Key insight 1 — SHAP vs variance:** Prognostic relevance (SHAP) and variance explained by a MOFA+ factor are orthogonal. Factor8 carries the highest survival signal despite explaining the least variance.
+
+### Modality ablation
+
+| Condition | FTT C-index | XGBoost | LightGBM |
+|-----------|-------------|---------|----------|
+| **Joint 3-modal** | 0.7512 ± 0.006 | 0.7465 ± 0.008 | 0.7451 ± 0.008 |
+| **Expression only** ★ | **0.7622 ± 0.007** | **0.7595 ± 0.009** | **0.7569 ± 0.010** |
+| Mutation only | 0.7520 ± 0.006 | 0.7402 ± 0.004 | 0.7317 ± 0.007 |
+| CNV only | 0.7493 ± 0.004 | 0.7424 ± 0.004 | 0.7400 ± 0.007 |
+
+> **Key insight 2 — Modality ablation:** Expression-only MOFA+ factors outperform the joint 3-modal model by **+0.011–0.013 C-index** across all architectures. When all factor capacity is dedicated to continuous RNA-seq data, MOFA+ extracts purer prognostic programmes without dilution from sparse binary mutations or noisy CNV. The joint model remains essential for biological interpretability and causal target discovery (DDD co-dependencies).
+
+### Causal validation (diff-diff)
+
+| Factor | ATT | p-value | Status |
+|--------|-----|---------|--------|
+| **Factor6** (9p24.1 immune checkpoint) | −0.486 | < 10⁻¹² | ✓ Causally validated |
+| **Factor15** (luminal de-differentiation) | −0.285 | < 10⁻¹⁷ | ✓ Causally validated |
+| Factor1 (squamous lineage) | −0.129 | 0.028 | ✓ Validated |
+| Factor8 (invasion/drivers) | +0.298 | 0.134 | Confounded |
+| **KRAS × Factor8 DDD** | −0.472 | 0.022 | ✓ Synergistic co-dependency |
+
+> **Key insight 3 — Causal layer:** Factor8's top SHAP rank reflects cancer-type composition confounding. Factor6 and Factor15 are the primary causally validated targets. The KRAS × Factor8 Triple Difference (p = 0.022) nominates KRAS inhibitor + invasion suppression as a combination therapy strategy invisible to SHAP alone.
 
 ---
 
@@ -44,9 +69,9 @@ tcga-pancan-multiomics/
 ├── src/
 │   ├── preprocess.py                     # Alignment, filtering, imputation
 │   ├── unsupervised/
-│   │   ├── mofa_analysis.py              # MOFA+ factor decomposition
+│   │   ├── mofa_analysis.py              # MOFA+ factor decomposition (modalities param)
 │   │   ├── clustering.py                 # K-means + Leiden clustering
-│   │   └── dim_reduction.py              # PCA / UMAP
+│   │   └── dim_reduction.py             # PCA / UMAP
 │   ├── supervised/
 │   │   ├── cox_models.py                 # Cox PH + ElasticNet
 │   │   ├── deepsurv.py                   # DeepSurv neural baseline
@@ -54,17 +79,28 @@ tcga-pancan-multiomics/
 │   │   └── shap_analysis.py              # SHAP computation & plots
 │   └── analysis/
 │       ├── marker_analysis.py            # Gene-level SHAP attribution
-│       └── build_manuscript.py           # Word document generation
+│       ├── modality_ablation.py          # Expression vs. Mut vs. CNV vs. Joint ablation
+│       ├── did_causal_layer.py           # diff-diff causal inference (CS, DDD, HonestDiD, TROP)
+│       └── build_manuscript.py          # Word document generation
 │
 ├── results/
-│   ├── dashboard.html                    # Interactive browser dashboard
+│   ├── dashboard.html                    # Interactive browser dashboard (8 panels)
+│   ├── graphrag.html                     # Graphical RAG — knowledge graph + Q&A
+│   ├── concept_map.html                  # Pipeline concept map
 │   ├── manuscript.docx                   # Main manuscript (Word)
 │   ├── supplementary.docx               # Supplementary material (Word)
 │   ├── figures/                          # All publication PNG figures
+│   ├── mofa_factors.csv                  # Joint 3-modal factor scores (7,902 × 18)
+│   ├── mofa_factors_expr_only.csv        # Expression-only factor scores
+│   ├── mofa_factors_mut_only.csv         # Mutation-only factor scores
+│   ├── mofa_factors_cnv_only.csv         # CNV-only factor scores
+│   ├── ablation_cindex_summary.csv       # 4 conditions × 3 models C-index table
 │   ├── mofa_weights_*.csv               # Per-modality MOFA factor weights
 │   ├── shap_importance_summary_models.csv
 │   ├── therapeutic_targets.csv
-│   ├── factor_biology_summary.txt
+│   ├── did_att_estimates.csv             # Callaway-Sant'Anna ATT per factor
+│   ├── did_ddd_synergy.csv              # Triple Difference gene-factor co-dependencies
+│   ├── did_sensitivity.csv              # HonestDiD bounds for Factor8
 │   └── ...                              # Other small result tables
 │
 ├── data/                                 # NOT tracked – download separately
@@ -163,7 +199,21 @@ python -m src.analysis.marker_analysis
 python -m src.analysis.build_manuscript
 ```
 
-### 5. Run the causal inference layer (diff-diff)
+### 5. Run the modality ablation
+
+```bash
+python -m src.analysis.modality_ablation
+```
+
+Trains single-modality MOFA+ (expression-only, mutation-only, CNV-only) and runs 5-fold CV on each.
+Reuses the existing joint `results/mofa_factors.csv` — no re-training needed for the joint condition.
+
+Outputs: `results/ablation_cindex_summary.csv`, `results/figures/ablation_cindex_comparison.png`,
+`results/figures/ablation_variance_heatmap.png`, and per-modality factor files.
+
+> **Key result:** Expression-only MOFA+ factors achieve C-index **0.7622** (FTT), **+0.011** above the joint model — the single richest modality for survival prediction. Joint model remains essential for biological interpretability and causal co-dependency mapping.
+
+### 7. Run the causal inference layer (diff-diff)
 
 ```bash
 python -m src.analysis.did_causal_layer
@@ -179,14 +229,17 @@ This runs five sequential analyses using the `diff-diff` library (v3.3):
 Outputs: `results/did_att_estimates.csv`, `results/did_ddd_synergy.csv`,
 `results/did_sensitivity.csv`, `results/did_summary.txt`, and 8 new figures.
 
-### 6. View results
+### 8. View results
 
 | Output | How to open |
 |--------|-------------|
-| `results/dashboard.html` | Open in any browser — 7 panels including Causal DiD |
+| `results/dashboard.html` | Open in any browser — **8 panels** (Overview, Models, MOFA+, SHAP, Targets, Findings, Causal DiD, Modality Ablation) |
+| `results/graphrag.html` | Open in any browser — Graphical RAG knowledge graph + Q&A |
+| `results/concept_map.html` | Open in any browser — Pipeline concept map |
 | `results/manuscript.docx` | Microsoft Word / LibreOffice |
 | `results/supplementary.docx` | Microsoft Word / LibreOffice |
 | `results/figures/` | PNG files, directly usable in publications |
+| `results/ablation_cindex_summary.csv` | 4-condition modality ablation summary table |
 
 ---
 
@@ -230,6 +283,14 @@ Three models are trained in 5-fold cross-validation on MOFA+ factor scores + cli
 ### SHAP attribution
 
 SHAP values are computed for each model separately. Factor importance is the average `|SHAP|` across the three models, weighted by inter-model consistency (inverse CV). Gene-level importance is estimated as `|MOFA_weight| × factor_avg_SHAP`, aggregated across the top-5 factors.
+
+### Modality ablation
+
+MOFA+ is retrained three times with a single-view subset (expression-only, mutation-only, CNV-only), using the same feature selection, likelihood functions, and `N_FACTORS=20` as the joint run. The `modalities` parameter to `run_mofa_pipeline()` controls which views are passed. Survival models are re-trained on each single-modality factor set under identical 5-fold CV splits (`random_state=42`), enabling paired comparison. No SHAP is computed during ablation runs.
+
+### Causal inference (diff-diff)
+
+Callaway-Sant'Anna (2021) staggered DiD on a cancer-type × AJCC-stage pseudo-panel. Treatment = high MOFA factor score (above cancer-type-specific median). Outcome = z-scored OS time. Supplemented by Bacon Decomposition (TWFE bias), Triple Difference (gene-factor synthetic lethality), HonestDiD (Rambachan-Roth 2023 sensitivity bounds), and TROP (nuclear-norm panel estimator).
 
 ### Therapeutic target nomination
 

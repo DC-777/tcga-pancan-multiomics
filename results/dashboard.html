@@ -994,6 +994,309 @@ function CausalDidPanel() {
   );
 }
 
+// ─── MODALITY ABLATION DATA ──────────────────────────────────────────────────
+const ABLATION_CONDITIONS = [
+  {
+    label:'Joint (3-modal)', short:'Joint',
+    color:'#6366f1', bg:'rgba(99,102,241,0.15)',
+    ftt_mean:0.7512, ftt_std:0.0063,
+    xgb_mean:0.7465, xgb_std:0.0082,
+    lgb_mean:0.7451, lgb_std:0.0075,
+    folds_ftt:[0.7433,0.7515,0.7599,0.7452,0.7563],
+    folds_xgb:[0.7361,0.7497,0.7574,0.7378,0.7517],
+    folds_lgb:[0.7382,0.7518,0.7487,0.7342,0.7527],
+    factors_retained:18, modalities:'Expression + Mutations + CNV',
+    insight:'Strongest for biological interpretability & therapeutic target discovery'
+  },
+  {
+    label:'Expression only', short:'Expr',
+    color:'#10b981', bg:'rgba(16,185,129,0.15)',
+    ftt_mean:0.7622, ftt_std:0.0066,
+    xgb_mean:0.7595, xgb_std:0.0094,
+    lgb_mean:0.7569, lgb_std:0.0100,
+    folds_ftt:[0.751,0.762,0.771,0.762,0.766],
+    folds_xgb:[0.743,0.764,0.771,0.755,0.764],
+    folds_lgb:[0.740,0.769,0.764,0.759,0.753],
+    factors_retained:18, modalities:'1,000 top-variance genes (Gaussian)',
+    insight:'Best raw survival prediction — all factor capacity on richest modality'
+  },
+  {
+    label:'Mutation only', short:'Mut',
+    color:'#f59e0b', bg:'rgba(245,158,11,0.15)',
+    ftt_mean:0.7520, ftt_std:0.0062,
+    xgb_mean:0.7402, xgb_std:0.0039,
+    lgb_mean:0.7317, lgb_std:0.0068,
+    folds_ftt:[0.754,0.752,0.762,0.743,0.749],
+    folds_xgb:[0.746,0.743,0.739,0.738,0.735],
+    folds_lgb:[0.744,0.724,0.734,0.727,0.729],
+    factors_retained:16, modalities:'300 most-frequent genes (Bernoulli)',
+    insight:'FTT handles sparse binary data far better than tree models (+0.020 gap)'
+  },
+  {
+    label:'CNV only', short:'CNV',
+    color:'#06b6d4', bg:'rgba(6,182,212,0.15)',
+    ftt_mean:0.7493, ftt_std:0.0039,
+    xgb_mean:0.7424, xgb_std:0.0038,
+    lgb_mean:0.7400, lgb_std:0.0069,
+    folds_ftt:[0.745,0.756,0.752,0.747,0.748],
+    folds_xgb:[0.745,0.740,0.744,0.736,0.747],
+    folds_lgb:[0.738,0.734,0.745,0.732,0.751],
+    factors_retained:16, modalities:'1,000 top-variance genes (Gaussian)',
+    insight:'Intermediate — continuous Gaussian but noisier signal than expression'
+  },
+];
+
+function AblationPanel() {
+  const [selCond, setSelCond] = useState(null);
+  const [selModel, setSelModel] = useState('ftt');
+
+  // Grouped bar chart — SVG inline
+  const chartSvg = useMemo(() => {
+    const W=620, H=260, PL=60, PR=20, PT=30, PB=50;
+    const cw=W-PL-PR, ch=H-PT-PB;
+    const nCond=ABLATION_CONDITIONS.length;
+    const models=['ftt','xgb','lgb'];
+    const mColors={'ftt':'#6366f1','xgb':'#f59e0b','lgb':'#10b981'};
+    const mLabels={'ftt':'FTT','xgb':'XGB','lgb':'LGB'};
+
+    const allMeans=ABLATION_CONDITIONS.flatMap(c=>models.map(m=>c[`${m}_mean`]));
+    const minY=Math.min(...allMeans)*0.993, maxY=Math.max(...allMeans)*1.005;
+    const sy=v=>PT+ch-((v-minY)/(maxY-minY))*ch;
+
+    const groupW=cw/nCond;
+    const bw=groupW*0.22;
+    const offsets=[-bw,0,bw];
+
+    let bars=[], labels=[], gridLines=[], errorBars=[];
+    // Grid
+    const ticks=[0.73,0.74,0.75,0.76,0.77];
+    ticks.forEach(t=>{
+      if(t<minY||t>maxY) return;
+      const y=sy(t);
+      gridLines.push(`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#2d3154" stroke-width="1"/>`);
+      gridLines.push(`<text x="${PL-6}" y="${y+4}" text-anchor="end" fill="#64748b" font-size="9">${t.toFixed(2)}</text>`);
+    });
+    // Reference line — joint FTT best
+    const refY=sy(0.7512);
+    gridLines.push(`<line x1="${PL}" y1="${refY}" x2="${W-PR}" y2="${refY}" stroke="#6366f1" stroke-width="1.2" stroke-dasharray="5 3" opacity="0.5"/>`);
+    gridLines.push(`<text x="${W-PR+2}" y="${refY-3}" fill="#6366f1" font-size="8" opacity="0.7">Joint</text>`);
+
+    ABLATION_CONDITIONS.forEach((c,ci)=>{
+      const cx=PL+(ci+0.5)*groupW;
+      models.forEach((m,mi)=>{
+        const mean=c[`${m}_mean`], std=c[`${m}_std`];
+        const x=cx+offsets[mi];
+        const y=sy(mean);
+        const bh=sy(minY)-y;
+        const isExpr=c.short==='Expr';
+        bars.push(`<rect x="${x-bw/2}" y="${y}" width="${bw}" height="${bh}" fill="${mColors[m]}" opacity="${isExpr?0.95:0.65}" rx="2"/>`);
+        // Error bar
+        const yt=sy(mean+std), yb=sy(mean-std);
+        errorBars.push(`<line x1="${x}" y1="${yt}" x2="${x}" y2="${yb}" stroke="${mColors[m]}" stroke-width="1.2"/>`);
+        errorBars.push(`<line x1="${x-3}" y1="${yt}" x2="${x+3}" y2="${yt}" stroke="${mColors[m]}" stroke-width="1.2"/>`);
+        errorBars.push(`<line x1="${x-3}" y1="${yb}" x2="${x+3}" y2="${yb}" stroke="${mColors[m]}" stroke-width="1.2"/>`);
+      });
+      // Condition label
+      labels.push(`<text x="${cx}" y="${H-PT+8}" text-anchor="middle" fill="${c.color}" font-size="10" font-weight="600">${c.short}</text>`);
+    });
+    // Legend
+    const legend=models.map((m,i)=>`<rect x="${PL+i*70}" y="8" width="10" height="10" fill="${mColors[m]}" rx="2"/><text x="${PL+i*70+13}" y="17" fill="#94a3b8" font-size="9">${mLabels[m]}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${gridLines.join('')}${bars.join('')}${errorBars.join('')}${labels.join('')}
+      ${legend}
+      <text x="${PL-40}" y="${PT+ch/2}" text-anchor="middle" fill="#64748b" font-size="9" transform="rotate(-90,${PL-40},${PT+ch/2})">C-index</text>
+    </svg>`;
+  },[]);
+
+  // Per-fold scatter for selected model
+  const foldChart = useMemo(()=>{
+    const W=620,H=180,PL=60,PR=20,PT=20,PB=40;
+    const cw=W-PL-PR, ch=H-PT-PB;
+    const allVals=ABLATION_CONDITIONS.flatMap(c=>c[`folds_${selModel}`]);
+    const minY=Math.min(...allVals)*0.993, maxY=Math.max(...allVals)*1.005;
+    const sy=v=>PT+ch-((v-minY)/(maxY-minY))*ch;
+    const nFolds=5;
+    let lines='', dots='', grid='';
+    [0.73,0.74,0.75,0.76,0.77,0.78].forEach(t=>{
+      if(t<minY||t>maxY) return;
+      const y=sy(t);
+      grid+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#1e2130" stroke-width="1"/>`;
+      grid+=`<text x="${PL-4}" y="${y+3}" text-anchor="end" fill="#475569" font-size="8">${t.toFixed(2)}</text>`;
+    });
+    ABLATION_CONDITIONS.forEach((c,ci)=>{
+      const folds=c[`folds_${selModel}`];
+      const pts=folds.map((v,fi)=>({
+        x:PL+(fi/(nFolds-1))*cw,
+        y:sy(v)
+      }));
+      const path='M'+pts.map(p=>`${p.x},${p.y}`).join('L');
+      lines+=`<path d="${path}" stroke="${c.color}" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="${ci===0?'4 2':'none'}"/>`;
+      pts.forEach(p=>{ dots+=`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${c.color}" opacity="0.85"/>`; });
+    });
+    const legend=ABLATION_CONDITIONS.map((c,i)=>`<rect x="${PL+i*130}" y="2" width="10" height="8" rx="1" fill="${c.color}" opacity="0.8"/><text x="${PL+i*130+13}" y="10" fill="${c.color}" font-size="8">${c.short}</text>`).join('');
+    const xLabels=[1,2,3,4,5].map((f,i)=>`<text x="${PL+(i/(nFolds-1))*cw}" y="${H-4}" text-anchor="middle" fill="#475569" font-size="8">Fold ${f}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${dots}${legend}${xLabels}</svg>`;
+  },[selModel]);
+
+  const joint = ABLATION_CONDITIONS[0];
+  const expr  = ABLATION_CONDITIONS[1];
+  const deltaFTT = (expr.ftt_mean - joint.ftt_mean);
+  const deltaXGB = (expr.xgb_mean - joint.xgb_mean);
+  const deltaLGB = (expr.lgb_mean - joint.lgb_mean);
+
+  return (
+    <div className="fade-in space-y-6">
+      <SectionHeader title="Modality Ablation" subtitle="Expression vs. Mutation vs. CNV vs. Joint MOFA+ — which omics data drives survival prediction?"/>
+
+      {/* Key finding banner */}
+      <div className="rounded-lg p-4" style={{background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.3)'}}>
+        <div className="flex items-start gap-4">
+          <div className="text-2xl">🔬</div>
+          <div>
+            <div className="text-sm font-bold text-emerald-400 mb-1">Surprising Finding: Expression-Only MOFA+ Outperforms Joint 3-Modal Model</div>
+            <div className="text-xs text-slate-300 leading-relaxed">
+              Single-modality MOFA+ trained only on RNA-seq expression achieves higher C-index than the joint model across all three architectures
+              (<strong className="text-emerald-300">FTT: +{(deltaFTT*1000).toFixed(1)} × 10⁻³ · XGB: +{(deltaXGB*1000).toFixed(1)} × 10⁻³ · LGB: +{(deltaLGB*1000).toFixed(1)} × 10⁻³</strong>).
+              When focused on a single continuous Gaussian view, all 18 MOFA+ factors capture pure expression co-variation programmes (invasion, lineage, immune)
+              without dilution from sparse binary mutation or noisy CNV features. The joint model's cross-modal factors add biological interpretability
+              and enable causal gene-factor co-dependency analysis — but for raw prognostic discrimination, expression dominates.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Condition cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {ABLATION_CONDITIONS.map(c=>{
+          const delta=c.ftt_mean-joint.ftt_mean;
+          return (
+            <div key={c.label} onClick={()=>setSelCond(selCond===c.label?null:c.label)}
+              className="card p-4 cursor-pointer transition-all"
+              style={{borderColor: selCond===c.label?c.color:'#2d3154', background: selCond===c.label?c.bg:'#1a1d2e'}}>
+              <div className="text-xs font-semibold mb-1" style={{color:c.color}}>{c.short}</div>
+              <div className="text-lg font-bold text-slate-100">{c.ftt_mean.toFixed(4)}</div>
+              <div className="text-xs text-slate-500">FTT C-index</div>
+              <div className="text-xs mt-2" style={{color:delta>0?'#10b981':delta<0?'#ef4444':'#64748b'}}>
+                {delta===0?'—':(delta>0?'+':'')+delta.toFixed(4)+' vs joint'}
+              </div>
+              <div className="text-xs text-slate-600 mt-1">{c.factors_retained} factors retained</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Selected condition detail */}
+      {selCond && (()=>{
+        const c=ABLATION_CONDITIONS.find(x=>x.label===selCond);
+        return (
+          <div className="card p-4" style={{borderColor:c.color}}>
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <div className="text-sm font-bold" style={{color:c.color}}>{c.label}</div>
+                <div className="text-xs text-slate-500">{c.modalities}</div>
+              </div>
+              <button className="text-slate-600 hover:text-slate-400 text-lg" onClick={()=>setSelCond(null)}>×</button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {['ftt','xgb','lgb'].map(m=>(
+                <div key={m} className="rounded p-2" style={{background:'rgba(255,255,255,0.04)'}}>
+                  <div className="text-xs text-slate-500 uppercase">{m.toUpperCase()}</div>
+                  <div className="text-base font-bold text-slate-200">{c[`${m}_mean`].toFixed(4)}</div>
+                  <div className="text-xs text-slate-500">±{c[`${m}_std`].toFixed(4)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="text-xs text-slate-400 leading-relaxed p-2 rounded" style={{background:'rgba(255,255,255,0.03)'}}>
+              {c.insight}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Grouped bar chart */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-slate-300 mb-3">5-fold CV C-index by Condition & Model</h3>
+        <div className="w-full overflow-x-auto" dangerouslySetInnerHTML={{__html:chartSvg}}/>
+        <p className="text-xs text-slate-500 mt-2">Bars show mean ± std across 5 folds. Dashed line = joint FTT reference. Error bars = 1 std. All folds used identical StratifiedKFold(seed=42) splits for direct comparability.</p>
+      </div>
+
+      {/* Per-fold trace */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-300">Per-Fold C-index Traces</h3>
+          <div className="flex gap-2">
+            {['ftt','xgb','lgb'].map(m=>(
+              <button key={m} onClick={()=>setSelModel(m)}
+                className={`text-xs px-3 py-1 rounded font-mono transition-all ${selModel===m?'text-slate-100':'text-slate-500'}`}
+                style={{background:selModel===m?'rgba(99,102,241,0.3)':'rgba(255,255,255,0.04)'}}>
+                {m.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="w-full overflow-x-auto" dangerouslySetInnerHTML={{__html:foldChart}}/>
+        <p className="text-xs text-slate-500 mt-1">Expression-only (green) sits above joint (indigo dashed) across most folds. Mutation-only (amber) and CNV-only (cyan) cluster below.</p>
+      </div>
+
+      {/* Full results table */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-slate-300 mb-3">Complete Ablation Results Table</h3>
+        <div className="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                {['Condition','Modalities','Factors','FTT mean±std','XGB mean±std','LGB mean±std','vs. Joint (FTT)'].map(h=>(
+                  <th key={h} className="text-left text-xs text-slate-400 font-semibold py-2 px-3 border-b border-slate-700">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ABLATION_CONDITIONS.map((c,i)=>{
+                const delta=c.ftt_mean-joint.ftt_mean;
+                return (
+                  <tr key={i} className={c.short==='Expr'?'highlight-row':''}>
+                    <td className="py-2 px-3 text-xs font-bold" style={{color:c.color}}>{c.short==='Expr'?'★ '+c.label:c.label}</td>
+                    <td className="py-2 px-3 text-xs text-slate-400">{c.modalities}</td>
+                    <td className="py-2 px-3 text-xs text-center text-slate-300">{c.factors_retained}</td>
+                    <td className="py-2 px-3 text-xs font-mono text-slate-200">{c.ftt_mean.toFixed(4)} ±{c.ftt_std.toFixed(4)}</td>
+                    <td className="py-2 px-3 text-xs font-mono text-slate-200">{c.xgb_mean.toFixed(4)} ±{c.xgb_std.toFixed(4)}</td>
+                    <td className="py-2 px-3 text-xs font-mono text-slate-200">{c.lgb_mean.toFixed(4)} ±{c.lgb_std.toFixed(4)}</td>
+                    <td className="py-2 px-3 text-xs font-mono" style={{color:delta>0?'#10b981':delta<0?'#ef4444':'#94a3b8'}}>
+                      {delta===0?'reference':(delta>0?'+':'')+delta.toFixed(4)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Interpretation grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">Why Does Expression-Only Win?</h3>
+          <div className="space-y-2 text-xs text-slate-400 leading-relaxed">
+            <p><strong className="text-slate-200">Factor capacity:</strong> All 18 MOFA+ factors are dedicated to expression — no capacity diluted by sparse binary mutation (300 genes, Bernoulli) or noisy CNV signals.</p>
+            <p><strong className="text-slate-200">Signal quality:</strong> RNA-seq is continuous, Gaussian-distributed, high-dimensional (1,000 genes) — MOFA+ decomposes it most faithfully. Mutations are sparse binary; CNV has integer-truncated values.</p>
+            <p><strong className="text-slate-200">Prognostic coherence:</strong> Expression factors (invasion, lineage, immune infiltration) map directly to survival mechanisms. Joint factors mix prognostic and biological interpretability signals.</p>
+            <p><strong className="text-emerald-400">Practical guidance:</strong> For pure survival prediction, use expression-only MOFA+. For therapeutic target discovery and causal co-dependency mapping, use joint.</p>
+          </div>
+        </div>
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">FTT vs. Trees on Single-Modality Data</h3>
+          <div className="space-y-2 text-xs text-slate-400 leading-relaxed">
+            <p><strong className="text-slate-200">Mutation-only gap:</strong> FTT (0.7520) outperforms XGB (0.7402) and LGB (0.7317) by +0.012–0.020 on mutation-only factors — the largest model architecture gap of any condition.</p>
+            <p><strong className="text-slate-200">Why:</strong> Self-attention captures higher-order co-mutation patterns (e.g. TP53 × KRAS co-occurrence) that gradient-boosted trees miss on sparse binary inputs from MOFA+ latent factors.</p>
+            <p><strong className="text-slate-200">CNV vs. Mutation:</strong> CNV-only beats mutation-only for XGB and LGB (0.742 vs. 0.740 · 0.740 vs. 0.732). CNV is continuous, so trees can split on magnitude — not just binary presence/absence.</p>
+            <p><strong className="text-slate-200">Model stability:</strong> CNV-only has the lowest std across conditions (FTT ±0.004, XGB ±0.004) — consistent signal, few extreme folds.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── APP SHELL ───────────────────────────────────────────────────────────────
 const NAV = [
   {id:'overview', label:'Overview', icon:'◉'},
@@ -1003,11 +1306,12 @@ const NAV = [
   {id:'markers',  label:'Therapeutic Targets', icon:'⬥'},
   {id:'findings', label:'Findings & Implications', icon:'★'},
   {id:'causal',   label:'Causal DiD Layer', icon:'⚖'},
+  {id:'ablation', label:'Modality Ablation', icon:'◍'},
 ];
 
 function App() {
   const [active, setActive] = useState('overview');
-  const panels = {overview:<OverviewPanel/>, models:<ModelsPanel/>, mofa:<MofaPanel/>, shap:<ShapPanel/>, markers:<MarkersPanel/>, findings:<FindingsPanel/>, causal:<CausalDidPanel/>};
+  const panels = {overview:<OverviewPanel/>, models:<ModelsPanel/>, mofa:<MofaPanel/>, shap:<ShapPanel/>, markers:<MarkersPanel/>, findings:<FindingsPanel/>, causal:<CausalDidPanel/>, ablation:<AblationPanel/>};
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
