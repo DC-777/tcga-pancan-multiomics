@@ -4,6 +4,87 @@
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-brightgreen)](https://dc-777.github.io/tcga-pancan-multiomics/)
+[![GraphRAG](https://img.shields.io/badge/GraphRAG-Knowledge%20Graph-blueviolet)](https://dc-777.github.io/tcga-pancan-multiomics/graphrag.html)
+
+---
+
+## Live Demo
+
+> **[🔬 Open Interactive Dashboard](https://dc-777.github.io/tcga-pancan-multiomics/)** — 8-panel browser app (no install needed)  
+> **[🕸 Open GraphRAG Knowledge Graph](https://dc-777.github.io/tcga-pancan-multiomics/graphrag.html)** — Queryable knowledge graph + Q&A  
+> **[🗺 Open Pipeline Concept Map](https://dc-777.github.io/tcga-pancan-multiomics/concept_map.html)** — Full pipeline diagram
+
+---
+
+## Dashboard Preview
+
+<table>
+<tr>
+<td width="50%">
+
+**Project Overview** — key stats, pipeline flow, key insight
+
+![Overview](docs/screenshots/panel_overview.png)
+
+</td>
+<td width="50%">
+
+**Model Performance** — 5-fold CV C-index per model + fold trace
+
+![Model Performance](docs/screenshots/panel_models.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**MOFA+ Factors** — variance explained, cancer-type heatmap
+
+![MOFA+ Factors](docs/screenshots/panel_mofa.png)
+
+</td>
+<td width="50%">
+
+**SHAP Attribution** — per-factor importance bar chart + factor cards
+
+![SHAP Attribution](docs/screenshots/panel_shap.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Therapeutic Targets** — gene-drug table with actionability
+
+![Therapeutic Targets](docs/screenshots/panel_targets.png)
+
+</td>
+<td width="50%">
+
+**Findings & Implications** — ranked biological conclusions
+
+![Findings & Implications](docs/screenshots/panel_findings.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Causal DiD Layer** — ATT estimates, DDD synergy, HonestDiD bounds
+
+![Causal DiD Layer](docs/screenshots/panel_did.png)
+
+</td>
+<td width="50%">
+
+**Modality Ablation** — expression vs. mutation vs. CNV vs. joint C-index
+
+![Modality Ablation](docs/screenshots/panel_ablation.png)
+
+</td>
+</tr>
+</table>
 
 ---
 

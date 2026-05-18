@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pan-Cancer Multiomics Pipeline — Concept Map</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: #f5f4f0; color: #1a1a1a; min-height: 100vh; }
+  :root {
+    --c-data:    #1a3a5c;
+    --c-prep:    #1a4a35;
+    --c-unsup:   #5a3200;
+    --c-surv:    #2c1a5c;
+    --c-shap:    #5c1a2a;
+    --c-causal:  #7a1a00;
+    --c-out:     #1a4a1a;
+    --bg-data:   #ddeaf7;
+    --bg-prep:   #d4eddf;
+    --bg-unsup:  #fce8cc;
+    --bg-surv:   #e2d9f3;
+    --bg-shap:   #f7d9e0;
+    --bg-causal: #fad5c8;
+    --bg-out:    #d6edda;
+  }
+  #root { display: flex; flex-direction: column; min-height: 100vh; }
+  .header { background: #1a1a1a; color: #f0ede6; padding: 14px 28px; display: flex; align-items: baseline; gap: 16px; border-bottom: 3px solid #c8b96e; }
+  .header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .header span { font-size: 0.78rem; color: #aaa; font-family: 'Courier New', monospace; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 10px 28px; background: #eeece6; border-bottom: 1px solid #ccc; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-family: 'Courier New', monospace; letter-spacing: 0.03em; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 1px; }
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .canvas-wrap { flex: 1; overflow: auto; padding: 24px; position: relative; }
+  .detail-panel { width: 340px; min-width: 340px; background: #fff; border-left: 2px solid #ccc; overflow-y: auto; display: flex; flex-direction: column; }
+  .detail-panel.empty { justify-content: center; align-items: center; color: #999; font-size: 0.85rem; font-style: italic; text-align: center; padding: 32px; }
+  .detail-header { padding: 18px 20px 12px; border-bottom: 1px solid #e0e0e0; }
+  .detail-header .stage-tag { font-family: 'Courier New', monospace; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 2px; display: inline-block; margin-bottom: 8px; }
+  .detail-header h2 { font-size: 1rem; font-weight: 700; line-height: 1.3; }
+  .detail-header .subtitle { font-size: 0.78rem; color: #555; margin-top: 4px; font-style: italic; }
+  .detail-body { padding: 16px 20px; flex: 1; }
+  .detail-body h3 { font-size: 0.72rem; font-family: 'Courier New', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin: 16px 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+  .detail-body h3:first-child { margin-top: 0; }
+  .detail-body p { font-size: 0.82rem; line-height: 1.55; color: #333; }
+  .detail-body ul { padding-left: 14px; }
+  .detail-body li { font-size: 0.8rem; line-height: 1.5; color: #333; margin-bottom: 2px; }
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .metric-box { background: #f7f6f2; border: 1px solid #e0ddd4; padding: 8px 10px; border-radius: 2px; }
+  .metric-box .val { font-family: 'Courier New', monospace; font-size: 1rem; font-weight: 700; }
+  .metric-box .lbl { font-size: 0.68rem; color: #777; margin-top: 2px; }
+  .close-btn { float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #666; margin-top: -4px; }
+  .close-btn:hover { color: #000; }
+
+  /* Pipeline canvas */
+  .pipeline { display: flex; gap: 0; align-items: flex-start; min-width: 1100px; position: relative; }
+  .stage-col { display: flex; flex-direction: column; align-items: stretch; min-width: 148px; max-width: 148px; position: relative; }
+  .stage-header { font-family: 'Courier New', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; padding: 5px 8px; border-radius: 0; text-align: center; }
+  .node { border: 1.5px solid; border-radius: 2px; padding: 8px 10px; margin: 4px 0; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; position: relative; background: #fff; }
+  .node:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 2; }
+  .node.active { box-shadow: 0 0 0 2.5px #c8b96e; z-index: 3; }
+  .node-title { font-size: 0.78rem; font-weight: 700; line-height: 1.2; }
+  .node-sub { font-size: 0.67rem; color: #666; margin-top: 2px; line-height: 1.3; font-family: 'Courier New', monospace; }
+  .node-badge { display: inline-block; font-family: 'Courier New', monospace; font-size: 0.6rem; padding: 1px 5px; border-radius: 2px; margin-top: 4px; font-weight: 700; }
+  .arrow-col { display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 28px; padding-top: 32px; }
+  .arrow-svg { overflow: visible; }
+
+  /* Node color variants */
+  .node-data   { border-color: #7aadd4; background: #f0f6fc; }
+  .node-data .node-title { color: var(--c-data); }
+  .node-data .node-badge { background: var(--bg-data); color: var(--c-data); }
+  .node-prep   { border-color: #6abf8a; background: #f0faf4; }
+  .node-prep .node-title { color: var(--c-prep); }
+  .node-prep .node-badge { background: var(--bg-prep); color: var(--c-prep); }
+  .node-unsup  { border-color: #e8a060; background: #fdf6ef; }
+  .node-unsup .node-title { color: var(--c-unsup); }
+  .node-unsup .node-badge { background: var(--bg-unsup); color: var(--c-unsup); }
+  .node-surv   { border-color: #a48cd4; background: #f6f2fc; }
+  .node-surv .node-title { color: var(--c-surv); }
+  .node-surv .node-badge { background: var(--bg-surv); color: var(--c-surv); }
+  .node-shap   { border-color: #d47aa0; background: #fdf0f4; }
+  .node-shap .node-title { color: var(--c-shap); }
+  .node-shap .node-badge { background: var(--bg-shap); color: var(--c-shap); }
+  .node-causal { border-color: #e06040; background: #fdf2ef; }
+  .node-causal .node-title { color: var(--c-causal); }
+  .node-causal .node-badge { background: var(--bg-causal); color: var(--c-causal); }
+  .node-out    { border-color: #60b060; background: #f0faf0; }
+  .node-out .node-title { color: var(--c-out); }
+  .node-out .node-badge { background: var(--bg-out); color: var(--c-out); }
+
+  .stage-data   .stage-header { background: var(--bg-data);   color: var(--c-data);   border: 1px solid #7aadd4; }
+  .stage-prep   .stage-header { background: var(--bg-prep);   color: var(--c-prep);   border: 1px solid #6abf8a; }
+  .stage-unsup  .stage-header { background: var(--bg-unsup);  color: var(--c-unsup);  border: 1px solid #e8a060; }
+  .stage-surv   .stage-header { background: var(--bg-surv);   color: var(--c-surv);   border: 1px solid #a48cd4; }
+  .stage-shap   .stage-header { background: var(--bg-shap);   color: var(--c-shap);   border: 1px solid #d47aa0; }
+  .stage-causal .stage-header { background: var(--bg-causal); color: var(--c-causal); border: 1px solid #e06040; }
+  .stage-out    .stage-header { background: var(--bg-out);    color: var(--c-out);    border: 1px solid #60b060; }
+
+  .connector { height: 2px; background: linear-gradient(90deg, #aaa 0%, #ccc 100%); flex: 1; position: relative; }
+  .connector::after { content: '▶'; position: absolute; right: -8px; top: -7px; font-size: 0.8rem; color: #aaa; }
+  .conn-wrap { display: flex; align-items: center; height: 100%; padding: 0 0; margin-top: 50px; }
+
+  .hint { font-size: 0.72rem; color: #888; font-style: italic; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// ── Node data ──────────────────────────────────────────────────────────────
+const STAGES = [
+  {
+    id: "data", label: "① Data Acquisition", cls: "stage-data",
+    nodes: [
+      {
+        id: "xena", type: "data", title: "UCSC Xena Hub",
+        sub: "pancanatlas.xenahubs.net", badge: "10 files · ~15 GB",
+        detail: {
+          subtitle: "Open-access TCGA Pan-Cancer Atlas downloads",
+          sections: [
+            { heading: "Source", body: "UCSC Xena Pan-Cancer Atlas hub. All files downloaded programmatically via download_tcga.py with 8 MB chunked streaming, 3-retry backoff, and SHA256 verification." },
+            { heading: "Modalities downloaded", items: ["RNA-seq expression (TOIL recomputed, log₂ TPM) — 1.8 GB", "Somatic mutations (MC3 MAF) — 80 MB", "CNV gene-level (GISTIC2 thresholded) — 60 MB", "DNA methylation HM450 beta values — 10 GB", "miRNA expression — 35 MB", "Protein (RPPA) — 5 MB", "Clinical phenotype — 2 MB", "Survival (CDR, Liu et al. 2018) — 1 MB"] },
+            { heading: "Coverage", body: "33 cancer types, ~11,000 patients at source. Three modalities (expression, mutations, CNV) used in primary analysis; methylation/miRNA/protein reserved for future extension." }
+          ],
+          metrics: [{ val: "33", lbl: "cancer types" }, { val: "~15 GB", lbl: "raw data" }, { val: "10", lbl: "data files" }, { val: "3", lbl: "active modalities" }]
+        }
+      },
+      {
+        id: "expr_raw", type: "data", title: "Gene Expression", sub: "tcga_RSEM_gene_tpm.gz", badge: "log₂(TPM+0.001)",
+        detail: {
+          subtitle: "TOIL recomputed RNA-seq, 10,535 samples × 58,581 genes",
+          sections: [
+            { heading: "Format", body: "RSEM-computed transcript-per-million (TPM) values stored as log₂(TPM + 0.001). The 0.001 pseudocount avoids log(0); TOIL floor sentinel = −9.965." },
+            { heading: "Scope", body: "Covers all TCGA primary tumors reprocessed through a uniform STAR-RSEM pipeline (TOIL), eliminating batch effects from multi-center sequencing runs." }
+          ],
+          metrics: [{ val: "10,535", lbl: "samples" }, { val: "58,581", lbl: "genes" }, { val: "1.8 GB", lbl: "compressed" }]
+        }
+      },
+      {
+        id: "mut_raw", type: "data", title: "Somatic Mutations", sub: "MC3 MAF v0.2.8", badge: "~3.5 M calls",
+        detail: {
+          subtitle: "TCGA MC3 consortium harmonized mutation calls",
+          sections: [
+            { heading: "Format", body: "Mutation Annotation Format (MAF). Filtered to non-synonymous variant types only: Missense, Nonsense, FrameShift, Splice Site, In-Frame indels." },
+            { heading: "Processing", body: "Barcodes truncated to 15 chars for cross-file compatibility. Pivoted to binary sample × gene presence/absence matrix. Genes mutated in <2% samples excluded." }
+          ],
+          metrics: [{ val: "~3.5M", lbl: "raw calls" }, { val: "1,490", lbl: "genes retained" }, { val: "80 MB", lbl: "compressed" }]
+        }
+      },
+      {
+        id: "cnv_raw", type: "data", title: "Copy Number (CNV)", sub: "GISTIC2 thresholded", badge: "−2/−1/0/+1/+2",
+        detail: {
+          subtitle: "Pan-cancer GISTIC2 gene-level copy number scores",
+          sections: [
+            { heading: "Format", body: "Gene-level integer thresholded scores: −2 = deep deletion, −1 = shallow deletion, 0 = neutral, +1 = low gain, +2 = high amplification." },
+            { heading: "Scope", body: "24,776 gene-level features across all primary tumor samples. Directly usable as-is after transposition; no additional thresholding applied." }
+          ],
+          metrics: [{ val: "24,776", lbl: "genes" }, { val: "5-level", lbl: "integer scores" }, { val: "60 MB", lbl: "compressed" }]
+        }
+      },
+      {
+        id: "clin_raw", type: "data", title: "Clinical / Survival", sub: "CDR + phenotype", badge: "OS time + event",
+        detail: {
+          subtitle: "TCGA Clinical Data Resource (Liu et al., Cell 2018)",
+          sections: [
+            { heading: "Survival", body: "CDR provides harmonized overall survival (OS_time in days, OS_event 0/1) for 11,081 patients across 33 cancer types — the gold standard TCGA survival annotation." },
+            { heading: "Clinical covariates", body: "age_at_initial_pathologic_diagnosis, AJCC pathologic tumor stage (I–IV), gender, cancer type. Stage used for DiD pseudo-panel construction." }
+          ],
+          metrics: [{ val: "11,081", lbl: "patients annotated" }, { val: "2,170", lbl: "OS events (final)" }, { val: "33", lbl: "cancer types" }]
+        }
+      }
+    ]
+  },
+  {
+    id: "prep", label: "② Preprocessing", cls: "stage-prep",
+    nodes: [
+      {
+        id: "expr_pp", type: "prep", title: "Expression QC", sub: "Top 5,000 variance genes", badge: "StandardScaler",
+        detail: {
+          subtitle: "Per-gene variance filtering + normalization",
+          sections: [
+            { heading: "Steps", items: ["Strip Ensembl version suffixes (.X)", "Replace TOIL floor (−9.965) → 0", "Map Ensembl IDs → HGNC via mygene.info API (4,389/5,000 resolved)", "Select top 5,000 highest inter-sample variance genes", "Transpose to samples × genes", "StandardScaler per gene for MOFA+ input"] },
+            { heading: "Rationale", body: "Top-variance selection removes low-information genes while keeping the most biologically discriminating signals for factor decomposition." }
+          ],
+          metrics: [{ val: "5,000", lbl: "genes selected" }, { val: "87.8%", lbl: "IDs mapped" }, { val: "μ=0, σ=1", lbl: "after scaling" }]
+        }
+      },
+      {
+        id: "mut_pp", type: "prep", title: "Mutation Filtering", sub: "Non-synon. only", badge: "≥2% freq. cutoff",
+        detail: {
+          subtitle: "MAF → binary sample × gene matrix",
+          sections: [
+            { heading: "Variant filter", body: "Retained: Missense_Mutation, Nonsense_Mutation, Frame_Shift_Del/Ins, Splice_Site, In_Frame_Del/Ins, Nonstop_Mutation, Translation_Start_Site, De_novo_Start_OutOfFrame." },
+            { heading: "Gene filter", body: "Genes mutated in ≥2% of aligned samples retained. Yielded 1,490 genes from ~18,000 mutated genes in the raw MAF. Top 300 by mutation frequency used for MOFA+ input." }
+          ],
+          metrics: [{ val: "1,490", lbl: "genes ≥2% freq" }, { val: "300", lbl: "top genes → MOFA+" }, { val: "binary", lbl: "0/1 matrix" }]
+        }
+      },
+      {
+        id: "cnv_pp", type: "prep", title: "CNV Prep", sub: "Top 1,000 variance", badge: "float32 · transposed",
+        detail: {
+          subtitle: "GISTIC2 → normalized matrix for MOFA+",
+          sections: [
+            { heading: "Steps", body: "Transpose genes×samples to samples×genes. Cast to float32. Select top 1,000 highest-variance genes for MOFA+ input. StandardScaler per gene." },
+            { heading: "Scope", body: "24,776 genes at source; 1,000 retained for factor analysis. Full 24,776-gene matrix retained in aligned_cnv.csv for downstream gene-level annotation." }
+          ],
+          metrics: [{ val: "24,776", lbl: "genes at source" }, { val: "1,000", lbl: "→ MOFA+" }, { val: "float32", lbl: "dtype" }]
+        }
+      },
+      {
+        id: "align", type: "prep", title: "Sample Alignment", sub: "4-way intersection", badge: "7,902 samples",
+        detail: {
+          subtitle: "Align expression · mutations · CNV · clinical on sample IDs",
+          sections: [
+            { heading: "Method", body: "Intersect sample sets across all four modalities. Restrict to primary tumor samples (TCGA barcode suffix -01A or -01B). Drop duplicates keeping first occurrence." },
+            { heading: "Result", body: "7,902 primary tumor samples across 31 cancer types. 7,787 of these have valid OS data (OS_time > 0) yielding 2,170 OS events." }
+          ],
+          metrics: [{ val: "7,902", lbl: "aligned samples" }, { val: "31", lbl: "cancer types" }, { val: "7,787", lbl: "with OS data" }, { val: "27.9%", lbl: "event rate" }]
+        }
+      }
+    ]
+  },
+  {
+    id: "unsup", label: "③ Unsupervised", cls: "stage-unsup",
+    nodes: [
+      {
+        id: "mofa", type: "unsup", title: "MOFA+", sub: "mofapy2 v0.7.4", badge: "18 factors retained",
+        detail: {
+          subtitle: "Multi-Omics Factor Analysis — joint latent decomposition",
+          sections: [
+            { heading: "Architecture", body: "Three views: expression (1,000 genes, Gaussian), mutations (300 genes, Bernoulli), CNV (1,000 genes, Gaussian). 20 factors requested; 2 pruned by ARD prior → 18 retained. Spike-and-slab weight sparsity prior." },
+            { heading: "Training", items: ["iter = 400, fast convergence mode", "Converged at iteration 71 (ELBO Δ < 0.00044%)", "ELBO: −204M → −5.8M", "seed = 42; ARD on both factors and weights"] },
+            { heading: "Output", body: "Per-sample factor scores (7,902 × 18) and per-gene weights per view. Factor weights identify which genes drive each biological programme." },
+            { heading: "Key factors", items: ["F8: Protease invasion + driver muts (SHAP #1)", "F6: 9p24.1 immune checkpoint amplicon (SHAP #2)", "F1: Squamous lineage TP63/KRT (SHAP #3)", "F15: Luminal de-differentiation (SHAP #4)", "F12: Thyroid/IDH gradient (SHAP #5)"] }
+          ],
+          metrics: [{ val: "18", lbl: "factors" }, { val: "2,300", lbl: "input features" }, { val: "6.1%", lbl: "max var. explained (F1)" }, { val: "iter 71", lbl: "convergence" }]
+        }
+      },
+      {
+        id: "pca", type: "unsup", title: "PCA", sub: "sklearn · n=50", badge: "expression only",
+        detail: {
+          subtitle: "Linear dimensionality reduction for visualization baseline",
+          sections: [
+            { heading: "Config", body: "PCA(n_components=50) after StandardScaler. Applied to top-5,000-variance gene expression matrix. Used as pre-reduction step before UMAP." },
+            { heading: "Use", body: "PC1–PC50 fed to UMAP. Also used as raw-feature baseline for Cox ridge and DeepSurv baseline models (PCA50 expression + mutation top-100 + CNV PCA30)." }
+          ],
+          metrics: [{ val: "50", lbl: "components" }, { val: "~40%", lbl: "var. explained (PC1-5)" }]
+        }
+      },
+      {
+        id: "umap", type: "unsup", title: "UMAP", sub: "umap-learn v0.5", badge: "n_neighbors=30",
+        detail: {
+          subtitle: "Non-linear 2D embedding for cohort visualization",
+          sections: [
+            { heading: "Config", body: "Input: PCA(50) scores. Parameters: n_neighbors=30, min_dist=0.3, random_state=42, metric='euclidean'. Output: 2D coordinates for all 7,902 samples." },
+            { heading: "Findings", body: "Clear lineage-based separation visible: gliomas, sarcomas, and epithelial carcinomas form distinct clusters. Within-type survival variation is substantial." }
+          ],
+          metrics: [{ val: "2D", lbl: "embedding" }, { val: "30", lbl: "n_neighbors" }, { val: "0.3", lbl: "min_dist" }]
+        }
+      },
+      {
+        id: "cluster", type: "unsup", title: "Clustering", sub: "KMeans + Leiden", badge: "22 Leiden clusters",
+        detail: {
+          subtitle: "Two complementary clustering approaches on UMAP space",
+          sections: [
+            { heading: "KMeans", body: "MiniBatchKMeans for k=2..25. Silhouette score optimized on 3,000-sample subsample. Optimal k=2 by silhouette (epithelial vs. non-epithelial) — insufficient biological resolution." },
+            { heading: "Leiden", body: "sklearn NearestNeighbors(k=15) → igraph → leidenalg RBConfigurationVertexPartition, resolution=0.4. 22 clusters identified. Log-rank survival separation: p = 2.02 × 10⁻²⁴." }
+          ],
+          metrics: [{ val: "22", lbl: "Leiden clusters" }, { val: "2.0×10⁻²⁴", lbl: "log-rank p" }, { val: "0.4", lbl: "resolution" }]
+        }
+      }
+    ]
+  },
+  {
+    id: "surv", label: "④ Survival Models", cls: "stage-surv",
+    nodes: [
+      {
+        id: "features", type: "surv", title: "Feature Set A", sub: "18 MOFA factors + covariates", badge: "50 features total",
+        detail: {
+          subtitle: "MOFA+ factors + cancer-type dummies + age",
+          sections: [
+            { heading: "Composition", body: "18 MOFA+ factor scores (continuous) + 31 cancer-type one-hot dummies + 1 age-at-diagnosis scalar = 50 features per sample." },
+            { heading: "Baseline (Set B)", body: "PCA(50) expression + top-100 mutation genes + CNV PCA(30), reduced to 80 features by ElasticNet. Used as feature-engineering ablation comparison." }
+          ],
+          metrics: [{ val: "50", lbl: "features" }, { val: "18", lbl: "MOFA factors" }, { val: "31", lbl: "cancer-type dummies" }]
+        }
+      },
+      {
+        id: "ftt", type: "surv", title: "FT-Transformer", sub: "Feature Tokenizer Transformer", badge: "C-index 0.751",
+        detail: {
+          subtitle: "Best performing model — attention over tabular features",
+          sections: [
+            { heading: "Architecture", body: "FeatureTokenizer: per-feature linear embed (d_token=64). Learnable [CLS] token. 2 pre-norm transformer blocks (4 heads, FFN d=256, dropout 0.2). Linear(64→1) risk head. ~68K parameters." },
+            { heading: "Training", body: "Loss: Breslow Cox partial log-likelihood (torch.logcumsumexp). Adam lr=1e-3, wd=1e-4. ReduceLROnPlateau. Early stopping patience=20 on 10% internal val split per fold." },
+            { heading: "Advantage", body: "Captures non-linear interaction effects between MOFA+ factors and cancer-type covariates via self-attention. Assigns ~2× weight to Factor 1 vs. tree models, detecting attention-dependent squamous effects." }
+          ],
+          metrics: [{ val: "0.751", lbl: "mean C-index" }, { val: "±0.006", lbl: "std (5-fold)" }, { val: "~68K", lbl: "parameters" }]
+        }
+      },
+      {
+        id: "xgb", type: "surv", title: "XGBoost", sub: "survival:cox objective", badge: "C-index 0.747",
+        detail: {
+          subtitle: "Gradient-boosted trees with built-in Cox objective",
+          sections: [
+            { heading: "Config", body: "survival:cox objective (negative label for censored). n_estimators=500, lr=0.05, max_depth=5, subsample=0.8, colsample_bytree=0.8." },
+            { heading: "Interpretation", body: "TreeExplainer provides exact SHAP values (no sampling). Cancer-type dummies receive relatively higher weight vs. FTT." }
+          ],
+          metrics: [{ val: "0.747", lbl: "mean C-index" }, { val: "±0.008", lbl: "std" }, { val: "500", lbl: "estimators" }]
+        }
+      },
+      {
+        id: "lgb", type: "surv", title: "LightGBM", sub: "custom Breslow Cox", badge: "C-index 0.745",
+        detail: {
+          subtitle: "Fast gradient boosting with custom survival objective",
+          sections: [
+            { heading: "Custom objective", body: "LightGBM 4.x removed built-in cox objective. Custom Breslow gradient/Hessian implemented via params['objective'] API. Survival labels: +OS_time (event), −OS_time (censored)." },
+            { heading: "Config", body: "600 boosting rounds, early stopping patience=30, C-index custom feval metric." }
+          ],
+          metrics: [{ val: "0.745", lbl: "mean C-index" }, { val: "±0.008", lbl: "std" }, { val: "600", lbl: "max rounds" }]
+        }
+      },
+      {
+        id: "cv", type: "surv", title: "5-Fold CV", sub: "stratified by OS event", badge: "Harrell C-index",
+        detail: {
+          subtitle: "Cross-validation protocol across all models",
+          sections: [
+            { heading: "Protocol", body: "StratifiedKFold(n_splits=5) stratified by OS event status (preserves event rate per fold). C-index computed via lifelines.utils.concordance_index." },
+            { heading: "Baseline gain", body: "MOFA+ feature set vs. raw PCA baseline: 0.751 vs. 0.724 mean C-index; 7-fold reduction in fold-to-fold std (0.006 vs. 0.053). Confirms MOFA+ biological structure reduces prediction variance." }
+          ],
+          metrics: [{ val: "7×", lbl: "lower std vs. baseline" }, { val: "0.724", lbl: "raw PCA baseline" }, { val: "+0.027", lbl: "MOFA+ gain" }]
+        }
+      }
+    ]
+  },
+  {
+    id: "shap", label: "⑤ SHAP Attribution", cls: "stage-shap",
+    nodes: [
+      {
+        id: "shap_compute", type: "shap", title: "SHAP Computation", sub: "GradientExplainer (FTT) TreeExplainer (XGB/LGB)", badge: "7,787 samples",
+        detail: {
+          subtitle: "Model-appropriate SHAP explainers for all three models",
+          sections: [
+            { heading: "FTT", body: "shap.GradientExplainer with 2D output wrapper (unsqueeze(−1)) and 200-sample background reference set from training data." },
+            { heading: "XGBoost & LightGBM", body: "shap.TreeExplainer with interventional feature perturbation (exact, no sampling). Produces exact Shapley values." },
+            { heading: "Aggregation", body: "Mean |SHAP| per feature per model across all samples. Factor importance = average across 3 models, weighted by inverse inter-model CV." }
+          ],
+          metrics: [{ val: "3", lbl: "models explained" }, { val: "50", lbl: "features" }, { val: "200", lbl: "background samples" }]
+        }
+      },
+      {
+        id: "factor_shap", type: "shap", title: "Factor Ranking", sub: "avg |SHAP| across models", badge: "Top 5 selected",
+        detail: {
+          subtitle: "MOFA+ factor importance from SHAP aggregation",
+          sections: [
+            { heading: "Top 5 factors", items: ["F8 Invasion/Drivers — 0.2831 (inter-model CV 0.031)", "F6 Immune Checkpoint 9p24.1 — 0.2194 (CV 0.087)", "F1 Squamous Lineage — 0.1624 (CV 0.446)", "F15 Luminal De-diff. — 0.1197 (CV 0.132)", "F12 Thyroid/IDH — 0.1196 (CV 0.102)"] },
+            { heading: "Key insight", body: "Prognostic relevance (SHAP) and variance explained are orthogonal. F8 = highest SHAP (0.283) but explains only 3.2% of cross-modal variance. F1 explains 6.1% but ranks 3rd by SHAP." }
+          ],
+          metrics: [{ val: "0.283", lbl: "F8 avg |SHAP|" }, { val: "0.031", lbl: "F8 inter-model CV" }, { val: "5", lbl: "top factors" }]
+        }
+      },
+      {
+        id: "gene_shap", type: "shap", title: "Gene Attribution", sub: "|weight| × factor SHAP", badge: "3 modalities",
+        detail: {
+          subtitle: "Back-projection from factor SHAP to gene-level scores",
+          sections: [
+            { heading: "Method", body: "Gene contribution = Σ |MOFA_weight_ij| × factor_avg_SHAP_j, summed over top-5 factors for each gene in each modality." },
+            { heading: "Top genes (expression)", items: ["PRSS3, KLK6 (F8 — invasion proteases)", "CD274, JAK2 (F6 — immune checkpoint)", "TP63, KRT16 (F1 — squamous)", "GATA3, MUC1 (F15 — luminal)"] },
+            { heading: "Top genes (mutation)", items: ["TP53 (F8, F1, F15, F12)", "KRAS (F8, F6)", "IDH1 (F8, F12, F15)", "ARID1A (F15)"] }
+          ],
+          metrics: [{ val: "3", lbl: "modalities" }, { val: "30+", lbl: "top genes" }, { val: "5", lbl: "factors aggregated" }]
+        }
+      },
+      {
+        id: "targets", type: "shap", title: "Target Nomination", sub: "15 priority targets", badge: "3 strategies",
+        detail: {
+          subtitle: "Actionable therapeutic target identification",
+          sections: [
+            { heading: "Annotation", body: "Each gene annotated with: role (Oncogene/TSG/Immune/Lineage), pathway (RAS-MAPK, PI3K-AKT, DDR etc.), FDA/clinical drug mapping, actionability tier." },
+            { heading: "Three strategies", items: ["Oncogene Inhibition: KRAS (sotorasib), BRAF (dabrafenib+trametinib), IDH1 (ivosidenib), PIK3CA (alpelisib)", "TSG Restoration/Synthetic Lethality: TP53 (APR-246), ARID1A→EZH2 (tazemetostat), KMT2C→PRMT5 (GSK3326595)", "Lineage / ADC Targeting: NECTIN4 (enfortumab vedotin), GPC5/6 (CAR-T), RLN1/2-RXFP1 (antagonist)"] }
+          ],
+          metrics: [{ val: "15", lbl: "priority targets" }, { val: "3", lbl: "strategies" }, { val: "7", lbl: "approved therapies" }]
+        }
+      }
+    ]
+  },
+  {
+    id: "causal", label: "⑥ Causal Inference", cls: "stage-causal",
+    nodes: [
+      {
+        id: "panel", type: "causal", title: "Pseudo-Panel", sub: "cancer type × AJCC stage", badge: "5,521 patients",
+        detail: {
+          subtitle: "Converting cross-sectional TCGA to a panel DiD design",
+          sections: [
+            { heading: "Construction", body: "Aggregate patients into cancer_type × stage cells. 20 cancer types with AJCC staging × 4 stages = up to 80 cells. Unit = cancer type, time = stage (1→4), outcome = mean z-scored OS time." },
+            { heading: "Treatment", body: "Cancer type at stage s is 'treated' if its mean factor score > pan-cancer median. first_treat = first stage where treatment activates; never-treated = always below median." },
+            { heading: "Stage counts", body: "Stage I: 1,796 / Stage II: 1,706 / Stage III: 1,314 / Stage IV: 695 (of 5,521 staged patients)." }
+          ],
+          metrics: [{ val: "5,521", lbl: "staged patients" }, { val: "20", lbl: "cancer types" }, { val: "80", lbl: "max cells" }, { val: "4", lbl: "time points" }]
+        }
+      },
+      {
+        id: "cs", type: "causal", title: "Callaway-Sant'Anna", sub: "Staggered DiD · DR estimation", badge: "5 factors analyzed",
+        detail: {
+          subtitle: "Primary causal estimator — avoids TWFE forbidden comparisons",
+          sections: [
+            { heading: "Estimator", body: "CallawaySantAnna(control_group='never_treated', estimation_method='dr', panel=True, cluster='cancer_type', n_bootstrap=999, aggregate='event_study', base_period='universal')" },
+            { heading: "Results", items: ["F6 9p24.1 checkpoint: ATT=−0.486, p<10⁻¹²  ✓ Validated", "F15 Luminal de-diff.: ATT=−0.285, p<10⁻¹⁷  ✓ Validated", "F1 Squamous: ATT=−0.129, p=0.028  ✓ Validated", "F12 Thyroid/IDH: ATT=−0.026, p=0.652  ✗ Not sig.", "F8 Invasion: ATT=+0.298, p=0.134  ✗ Confounded"] },
+            { heading: "Bacon Decomposition", body: "37% of TWFE weight for F8 comes from forbidden timing comparisons (early-vs-late), validating CS over TWFE." }
+          ],
+          metrics: [{ val: "−0.486", lbl: "F6 ATT (p<10⁻¹²)" }, { val: "−0.285", lbl: "F15 ATT (p<10⁻¹⁷)" }, { val: "37%", lbl: "TWFE contamination" }]
+        }
+      },
+      {
+        id: "ddd", type: "causal", title: "Triple Difference", sub: "Gene × Factor × Stage", badge: "4 pairs tested",
+        detail: {
+          subtitle: "Synergistic co-dependency analysis",
+          sections: [
+            { heading: "Design", body: "DDD = (DiD among mutation-carriers) − (DiD among non-carriers). Tests whether factor's causal effect is amplified when the gene is also mutated." },
+            { heading: "4 pairs tested", items: ["KRAS × F8: DDD=−0.472, p=0.022  ✓ SIGNIFICANT", "TP53 × F8: DDD=−0.075, p=0.627  ✗", "PIK3CA × F15: DDD=−0.213, p=0.267  ✗", "BRAF × F12: DDD=+0.062, p=0.868  ✗"] },
+            { heading: "Clinical implication", body: "KRAS mutation + Factor 8 invasion program synergistically impair survival → KRAS inhibitor + anti-invasion combination therapy (nafamostat, bemcentinib)." }
+          ],
+          metrics: [{ val: "−0.472", lbl: "KRAS×F8 DDD" }, { val: "0.022", lbl: "p-value" }, { val: "1/4", lbl: "pairs significant" }]
+        }
+      },
+      {
+        id: "honestdid", type: "causal", title: "HonestDiD", sub: "Rambachan-Roth 2023", badge: "M-grid sweep",
+        detail: {
+          subtitle: "Sensitivity bounds under parallel-trends violations",
+          sections: [
+            { heading: "Method", body: "Sweeps M ∈ {0, 0.05, 0.10, 0.20, 0.50, 1.0} — maximum allowed pre-period trend deviation. Confidence interval widens with M; 'robustness budget' = min M at which CI includes zero." },
+            { heading: "Factor 8 result", body: "CI includes zero even at M=0 (exact PT). Robustness budget = 0. Confirms F8 aggregate ATT is not causally identified — its SHAP signal is driven by cancer-type composition confounding." },
+            { heading: "F6 & F15 robustness", body: "CI excludes zero even at M=0.50, indicating robustness to 50% pre-trend violations — a high bar in empirical practice." }
+          ],
+          metrics: [{ val: "0.0", lbl: "F8 robustness budget" }, { val: ">0.50", lbl: "F6 & F15 budget" }, { val: "6", lbl: "M values tested" }]
+        }
+      },
+      {
+        id: "trop", type: "causal", title: "TROP", sub: "Nuclear-norm panel adj.", badge: "Robustness check",
+        detail: {
+          subtitle: "Triply Robust Panel estimator with factor adjustment",
+          sections: [
+            { heading: "Method", body: "TROP applies nuclear-norm matrix factorization to the aggregated panel, directly adjusting for latent factor confounding — appropriate since MOFA+ factors are the primary confounders." },
+            { heading: "Sample restriction", body: "Requires ≥2 pre-treatment periods → restricted to cancer types with first_treat ≥ 3. Yields 10 units (2 treated, 8 never-treated)." },
+            { heading: "Results", body: "TROP ATT directionally consistent: F6 = −0.41 (CS: −0.49); F15 = −0.27 (CS: −0.29); F1 = −0.11 (CS: −0.13). Independent confirmation of primary findings." }
+          ],
+          metrics: [{ val: "−0.41", lbl: "F6 TROP ATT" }, { val: "−0.27", lbl: "F15 TROP ATT" }, { val: "10", lbl: "units in panel" }]
+        }
+      }
+    ]
+  },
+  {
+    id: "out", label: "⑦ Outputs", cls: "stage-out",
+    nodes: [
+      {
+        id: "dashboard", type: "out", title: "Interactive Dashboard", sub: "results/dashboard.html", badge: "7 panels · self-contained",
+        detail: {
+          subtitle: "Browser-based interactive results viewer",
+          sections: [
+            { heading: "Technology", body: "Single self-contained HTML file. React 18 + Tailwind via CDN (no build step). All data embedded as JS constants." },
+            { heading: "7 panels", items: ["① Overview — cohort stats & pipeline summary", "② Model Performance — C-index tables & KM curves", "③ MOFA+ Factors — variance explained, factor biology", "④ SHAP Attribution — factor ranking, gene heatmap", "⑤ Therapeutic Targets — priority target table", "⑥ Findings & Implications — narrative results", "⑦ Causal DiD Layer — ATT tables, DDD, HonestDiD"] }
+          ],
+          metrics: [{ val: "7", lbl: "nav panels" }, { val: "~1.5 MB", lbl: "file size" }, { val: "0", lbl: "dependencies" }]
+        }
+      },
+      {
+        id: "manuscript", type: "out", title: "Manuscript (Word)", sub: "results/manuscript.docx", badge: "5 sections + refs",
+        detail: {
+          subtitle: "Main publication-ready manuscript",
+          sections: [
+            { heading: "Structure", items: ["Abstract (updated with DiD findings)", "§1 Introduction (6 paragraphs)", "§2 Methodology (2.1–2.6 incl. DiD)", "§3 Results (3.1–3.5 incl. DiD results)", "§4 Findings & Implications (4.1–4.7 incl. revised targets)", "§5 Conclusion (updated)", "References (13 citations)"] },
+            { heading: "Key tables", body: "Table 1: CV performance; Table 2: 15 therapeutic targets; Table 3: DiD ATT estimates." }
+          ],
+          metrics: [{ val: "13", lbl: "figures" }, { val: "3", lbl: "tables" }, { val: "13", lbl: "references" }]
+        }
+      },
+      {
+        id: "supp", type: "out", title: "Supplementary (Word)", sub: "results/supplementary.docx", badge: "S1–S11",
+        detail: {
+          subtitle: "Extended methods and results — 11 supplementary sections",
+          sections: [
+            { heading: "Sections", items: ["S1: Extended methods (data, expression, mutation, MOFA+, FTT, LGB)", "S2: Cohort statistics (Tables S2–S3)", "S3–S4: PCA/UMAP/clustering (Figs S1–S9)", "S5: MOFA+ extended (Figs S10–S17, Table S4)", "S6: Cox/DeepSurv baselines (Figs S18–S21)", "S7: Full SHAP per model (Figs S22–S27)", "S8: Marker analysis (Figs S28–S31, Tables S5–S7)", "S9: Model consistency (Fig S32)", "S10: Software (Table S8 — 18 packages)", "S11: Extended DiD (Tables S9–S11, Figs S33–S41)"] }
+          ],
+          metrics: [{ val: "11", lbl: "sections" }, { val: "41", lbl: "figures" }, { val: "11", lbl: "tables" }]
+        }
+      },
+      {
+        id: "figs", type: "out", title: "Publication Figures", sub: "results/figures/*.png", badge: "41 PNG files",
+        detail: {
+          subtitle: "All publication-ready figures at print resolution",
+          sections: [
+            { heading: "Categories", items: ["UMAP & PCA: umap_cancer_type, umap_survival, pca_scree", "MOFA+: variance_explained, factor_umap, top_weights_F{1,4,7,9,12}", "Models: model_comparison_cindex, risk_km_best_model", "SHAP: shap_three_model_comparison, shap_{ftt,xgb,lgb}_{beeswarm,bar}", "Markers: marker_top40, marker_heatmap, marker_pathway_bubble", "DiD (new): did_event_study_Factor{8,6,1,15,12}, did_ddd_synergy_heatmap, did_honest_bounds, did_forest_cancer_types, did_bacon_decomp"] },
+            { heading: "Format", body: "All figures saved as PNG (dpi=150). matplotlib 3.10 + seaborn 0.13." }
+          ],
+          metrics: [{ val: "41", lbl: "total figures" }, { val: "8", lbl: "new DiD figures" }, { val: "PNG", lbl: "format" }]
+        }
+      },
+      {
+        id: "csv_out", type: "out", title: "Result Tables (CSV)", sub: "results/*.csv", badge: "8 data files",
+        detail: {
+          subtitle: "Machine-readable results for downstream use",
+          sections: [
+            { heading: "Files", items: ["shap_importance_summary_models.csv — per-model per-factor SHAP", "therapeutic_targets.csv — 15 targets with annotations", "mofa_weights_{expression,mutations,cnv}.csv — factor weights", "did_att_estimates.csv — CS ATT for 5 factors", "did_ddd_synergy.csv — DDD results for 4 pairs", "did_sensitivity.csv — HonestDiD M-grid bounds", "did_summary.txt — plain-English findings"] }
+          ],
+          metrics: [{ val: "8", lbl: "result files" }, { val: "3", lbl: "new DiD CSVs" }]
+        }
+      }
+    ]
+  }
+];
+
+const STAGE_COLORS = {
+  data: "#1a3a5c", prep: "#1a4a35", unsup: "#5a3200",
+  surv: "#2c1a5c", shap: "#5c1a2a", causal: "#7a1a00", out: "#1a4a1a"
+};
+
+// ── Arrow connector between stage columns ──────────────────────────────────
+function StageArrow() {
+  return (
+    <div style={{ display:'flex', alignItems:'center', minWidth:30, paddingTop:48 }}>
+      <div style={{ height:2, width:14, background:'#bbb' }} />
+      <div style={{ width:0, height:0, borderTop:'6px solid transparent', borderBottom:'6px solid transparent', borderLeft:'8px solid #bbb' }} />
+    </div>
+  );
+}
+
+// ── Single node ────────────────────────────────────────────────────────────
+function Node({ node, active, onClick }) {
+  return (
+    <div
+      className={`node node-${node.type}${active ? ' active' : ''}`}
+      onClick={() => onClick(node)}
+      title="Click for details"
+    >
+      <div className="node-title">{node.title}</div>
+      {node.sub && <div className="node-sub">{node.sub}</div>}
+      {node.badge && <div className={`node-badge`} style={{
+        background: `color-mix(in srgb, ${STAGE_COLORS[node.type]} 12%, white)`,
+        color: STAGE_COLORS[node.type],
+        border: `1px solid color-mix(in srgb, ${STAGE_COLORS[node.type]} 30%, white)`
+      }}>{node.badge}</div>}
+    </div>
+  );
+}
+
+// ── Detail panel ───────────────────────────────────────────────────────────
+function DetailPanel({ node, onClose }) {
+  if (!node) return (
+    <div className="detail-panel empty">
+      <div>
+        <div style={{fontSize:'2rem', marginBottom:8}}>←</div>
+        <div>Click any node to explore pipeline details</div>
+      </div>
+    </div>
+  );
+  const d = node.detail;
+  const color = STAGE_COLORS[node.type];
+  return (
+    <div className="detail-panel">
+      <div className="detail-header">
+        <button className="close-btn" onClick={onClose}>×</button>
+        <div className="stage-tag" style={{ background: `color-mix(in srgb, ${color} 12%, white)`, color }}>
+          {node.type.toUpperCase()}
+        </div>
+        <h2>{node.title}</h2>
+        {d.subtitle && <div className="subtitle">{d.subtitle}</div>}
+      </div>
+      {d.metrics && (
+        <div style={{ padding:'12px 20px 0', borderBottom:'1px solid #eee' }}>
+          <div className="metric-grid">
+            {d.metrics.map((m, i) => (
+              <div className="metric-box" key={i}>
+                <div className="val" style={{ color }}>{m.val}</div>
+                <div className="lbl">{m.lbl}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{height:12}}/>
+        </div>
+      )}
+      <div className="detail-body">
+        {d.sections.map((s, i) => (
+          <div key={i}>
+            <h3>{s.heading}</h3>
+            {s.body && <p>{s.body}</p>}
+            {s.items && <ul>{s.items.map((it, j) => <li key={j}>{it}</li>)}</ul>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main app ───────────────────────────────────────────────────────────────
+function App() {
+  const [selected, setSelected] = useState(null);
+
+  const handleClick = (node) => {
+    setSelected(prev => (prev && prev.id === node.id) ? null : node);
+  };
+
+  return (
+    <div id="root-inner" style={{ display:'flex', flexDirection:'column', minHeight:'100vh' }}>
+      {/* Header */}
+      <div className="header">
+        <h1>Pan-Cancer Multiomics Pipeline</h1>
+        <span>TCGA · 31 cancer types · 7,902 samples · MOFA+ → FTT/XGB/LGB → SHAP → DiD</span>
+      </div>
+
+      {/* Legend */}
+      <div className="legend">
+        {[
+          { label:'① Data Acquisition', color:'#1a3a5c', bg:'#ddeaf7' },
+          { label:'② Preprocessing',    color:'#1a4a35', bg:'#d4eddf' },
+          { label:'③ Unsupervised',      color:'#5a3200', bg:'#fce8cc' },
+          { label:'④ Survival Models',  color:'#2c1a5c', bg:'#e2d9f3' },
+          { label:'⑤ SHAP Attribution', color:'#5c1a2a', bg:'#f7d9e0' },
+          { label:'⑥ Causal Inference', color:'#7a1a00', bg:'#fad5c8' },
+          { label:'⑦ Outputs',          color:'#1a4a1a', bg:'#d6edda' },
+        ].map(l => (
+          <div className="legend-item" key={l.label}>
+            <div className="legend-dot" style={{ background: l.bg, border:`1.5px solid color-mix(in srgb, ${l.color} 40%, white)` }} />
+            {l.label}
+          </div>
+        ))}
+        <div style={{ marginLeft:'auto', fontSize:'0.7rem', color:'#999', fontStyle:'italic', alignSelf:'center' }}>
+          Click any node for details
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="main">
+        {/* Canvas */}
+        <div className="canvas-wrap">
+          <div className="pipeline">
+            {STAGES.map((stage, si) => (
+              <React.Fragment key={stage.id}>
+                <div className={`stage-col stage-${stage.id}`}>
+                  <div className="stage-header">{stage.label}</div>
+                  {stage.nodes.map(node => (
+                    <Node
+                      key={node.id}
+                      node={node}
+                      active={selected && selected.id === node.id}
+                      onClick={handleClick}
+                    />
+                  ))}
+                </div>
+                {si < STAGES.length - 1 && <StageArrow />}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Flow annotation */}
+          <div style={{ marginTop:20, padding:'12px 16px', background:'#fff', border:'1px solid #ddd', borderRadius:2, maxWidth:900, fontSize:'0.78rem', color:'#555', lineHeight:1.6 }}>
+            <strong style={{fontFamily:'Courier New', fontSize:'0.7rem', textTransform:'uppercase', letterSpacing:'0.06em'}}>Data Flow Summary</strong>
+            <span style={{margin:'0 8px', color:'#ccc'}}>|</span>
+            <span>UCSC Xena (10 files) → Preprocessing (7,902 aligned) → MOFA+ (18 factors) → 3 survival models (best C-index 0.751) → SHAP (top-5 factors, 15 targets) → DiD causal layer (F6 &amp; F15 validated; KRAS×F8 DDD p=0.022) → Manuscript + Dashboard + 41 figures</span>
+          </div>
+
+          {/* Key findings callouts */}
+          <div style={{ marginTop:14, display:'flex', gap:10, flexWrap:'wrap', maxWidth:1100 }}>
+            {[
+              { color:'#2c1a5c', bg:'#f0ecfb', label:'Best Model', val:'FTT  C-index 0.751 ± 0.006' },
+              { color:'#5c1a2a', bg:'#fdf0f4', label:'Top SHAP Factor', val:'F8 avg |SHAP| = 0.283' },
+              { color:'#7a1a00', bg:'#fdf2ef', label:'Causal #1 (CS DiD)', val:'F6 ATT = −0.486  p < 10⁻¹²' },
+              { color:'#7a1a00', bg:'#fdf2ef', label:'Causal #2 (CS DiD)', val:'F15 ATT = −0.285  p < 10⁻¹⁷' },
+              { color:'#7a1a00', bg:'#fdf2ef', label:'Synergy (DDD)', val:'KRAS×F8  DDD = −0.472  p = 0.022' },
+              { color:'#1a4a35', bg:'#f0faf4', label:'Therapeutic targets', val:'15 targets · 3 strategies' },
+            ].map((f, i) => (
+              <div key={i} style={{ background:f.bg, border:`1px solid color-mix(in srgb, ${f.color} 25%, white)`, borderRadius:2, padding:'7px 12px', fontSize:'0.75rem' }}>
+                <div style={{ fontFamily:'Courier New', fontSize:'0.62rem', textTransform:'uppercase', letterSpacing:'0.07em', color:f.color, marginBottom:2 }}>{f.label}</div>
+                <div style={{ fontFamily:'Courier New', fontWeight:700, color:f.color }}>{f.val}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hint" style={{textAlign:'left', marginTop:12}}>
+            Scroll horizontally if the full pipeline is not visible · All 7,902 samples across 31 TCGA cancer types
+          </div>
+        </div>
+
+        {/* Detail panel */}
+        <DetailPanel node={selected} onClose={() => setSelected(null)} />
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
