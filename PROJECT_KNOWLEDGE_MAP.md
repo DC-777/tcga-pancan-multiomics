@@ -525,15 +525,3 @@ Use these labels in future reports:
 | Medium | Relative model ranking, SHAP feature importance, cluster/cancer-type associations. |
 | Low to medium | Biological interpretation of MOFA factors without external validation. |
 | Low | Therapeutic target claims, unless supported by external curated databases and cancer-specific validation. |
-
-## 16. Quick Agent Checklist Before Answering User Questions
-
-Before answering a scientific or modeling question:
-
-- [ ] Did I check the relevant current CSV rather than relying on memory?
-- [ ] Did I distinguish current outputs from stale report prose?
-- [ ] Did I account for cancer-type confounding?
-- [ ] Did I explain whether a result is predictive, associative, or mechanistic?
-- [ ] Did I avoid overclaiming therapeutic actionability?
-- [ ] Did I include exact file paths when pointing the user to artifacts?
-
