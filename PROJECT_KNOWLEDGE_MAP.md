@@ -4,12 +4,6 @@ Purpose: this file is an editable onboarding and training map for a future AI ag
 
 Last updated: 2026-05-13
 
-Project root:
-
-```text
-C:\Users\debad\OneDrive\Documents\DC Academic Research\Cancer Research
-```
-
 Primary deliverable folders:
 
 ```text
@@ -460,40 +454,7 @@ Potential improvements:
 - Adjustment for tumor purity, stage, treatment, and batch effects where available.
 - Compare marker candidates against CIViC, OncoKB, DGIdb, MSigDB, and DepMap.
 
-## 12. Suggested Prompt For A New AI Agent
-
-Use this prompt to initialize a future agent:
-
-```text
-You are working on the TCGA Pan-Cancer Multi-Omics project at:
-C:\Users\debad\OneDrive\Documents\DC Academic Research\Cancer Research
-
-Read PROJECT_KNOWLEDGE_MAP.md first. Then inspect current CSV outputs in results/
-before trusting older reports. Your job is to preserve the data contracts:
-aligned matrices are samples x features, indexed by 15-character TCGA primary
-tumor sample barcodes. The main pipeline is download -> convert -> preprocess ->
-UMAP/clustering -> MOFA -> Cox/DeepSurv -> model comparison -> SHAP ->
-marker analysis -> report.
-
-When making claims, cite current result tables and figures. Be cautious about
-cancer-type confounding, mutation burden confounding, stale generated prose, and
-whether mofa_analysis.py used real mofapy2 or its fallback NMF proxy.
-```
-
-## 13. Editable TODOs For Future Agents
-
-- [ ] Verify the exact Python environment and dependency versions used for the final run.
-- [ ] Confirm whether final `mofa_factors.csv` came from `mofapy2` or fallback NMF.
-- [ ] Add a small `run_pipeline.ps1` or `Makefile` with reproducible commands.
-- [ ] Add automated validation checks for aligned matrix shapes and sample indexes.
-- [ ] Add a `results_manifest.md` listing every output and which script generated it.
-- [ ] Rebuild `build_report.py` so it no longer contains stale hard-coded counts.
-- [ ] Add cancer-type-stratified model evaluation.
-- [ ] Add pathway enrichment for top factor genes.
-- [ ] Add external validation plan.
-- [ ] Add clear manuscript claims ranked by confidence level.
-
-## 14. Current Important Outputs
+## 12. Current Important Outputs
 
 | Output | Meaning |
 |---|---|
@@ -515,7 +476,7 @@ whether mofa_analysis.py used real mofapy2 or its fallback NMF proxy.
 | `results/factor_biology_summary.txt` | Text summary of top factor biology. |
 | `results/methodology_results_findings_2026.html` | Consolidated HTML report created from current outputs. |
 
-## 15. Confidence Levels For Claims
+## 13. Confidence Levels For Claims
 
 Use these labels in future reports:
 
